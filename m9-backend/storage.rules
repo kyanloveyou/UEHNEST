@@ -1,0 +1,14 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /artifacts/{appId}/private/m5/reviewer_proofs/{uid}/{subjectCode}/{fileName} {
+      // main_admin = email đăng nhập có phần trước @ là khaianhxuanai (web không lưu role trong profile)
+      allow read: if request.auth != null && (request.auth.uid == uid
+        || request.auth.token.email.split('@')[0].lower() == 'khaianhxuanai');
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|application/pdf');
+      allow update, delete: if false;
+    }
+  }
+}

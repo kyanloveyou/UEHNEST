@@ -1,0 +1,5 @@
+{ "indexes": [
+  { "collectionGroup": "m5_verifications", "queryScope": "COLLECTION", "fields": [ {"fieldPath":"subjectCode","order":"ASCENDING"}, {"fieldPath":"status","order":"ASCENDING"}, {"fieldPath":"updatedAt","order":"DESCENDING"} ] },
+  { "collectionGroup": "m5_reports", "queryScope": "COLLECTION", "fields": [ {"fieldPath":"docId","order":"ASCENDING"}, {"fieldPath":"contentVersion","order":"ASCENDING"}, {"fieldPath":"status","order":"ASCENDING"} ] },
+  { "collectionGroup": "m5_kd_ledger", "queryScope": "COLLECTION", "fields": [ {"fieldPath":"uid","order":"ASCENDING"}, {"fieldPath":"dateVN","order":"ASCENDING"}, {"fieldPath":"createdAt","order":"DESCENDING"} ] }
+], "fieldOverrides": [] }

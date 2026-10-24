@@ -1,0 +1,86 @@
+// === FIRESTORE RULES — BỔ SUNG CHO MODULE 9 (gộp vào rules Module 1–8 hiện có) ===
+// LƯU Ý: web KHÔNG lưu `role` trong profile/info. Vai trò được suy ra từ email đăng nhập
+// (main_admin = khaianhxuanai) hoặc tempAdmins/{username} còn hạn — rules bên dưới khớp đúng cách đó.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function uname() { return request.auth.token.email.split('@')[0].lower(); }
+    function adminPath(appId) { return /databases/$(database)/documents/artifacts/$(appId)/public/data/tempAdmins/$(uname()); }
+    function roleOf(appId) {
+      return uname() == 'khaianhxuanai' ? 'main_admin'
+        : (exists(adminPath(appId)) && get(adminPath(appId)).data.expiresAt > request.time.toMillis() ? get(adminPath(appId)).data.role : 'user');
+    }
+    function isMainAdmin(appId) { return isSignedIn() && roleOf(appId) == 'main_admin'; }
+    function isAdminOrMain(appId) { return isSignedIn() && roleOf(appId) in ['admin', 'main_admin']; }
+    function isStaff(appId) { return isSignedIn() && roleOf(appId) in ['mod', 'admin', 'main_admin']; }
+    // ĐẶT true CHỈ SAU KHI đã deploy Functions + bật KDX_M9_FLAGS.interceptLegacyReward = true,
+    // nếu không điểm danh/mở khóa/quà tặng cũ (client tự ghi kdCoins) sẽ bị PERMISSION_DENIED.
+    function lockCoins() { return false; }
+
+    // 1. Minh chứng nhạy cảm: CHỈ chủ đơn và main_admin
+    match /artifacts/{appId}/private/m5/reviewer_proofs/{appDocId} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isMainAdmin(appId));
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid
+        && appDocId == (request.auth.uid + '_' + request.resource.data.subjectCode)
+        && request.resource.data.gpaScore is number && request.resource.data.gpaScore >= 0 && request.resource.data.gpaScore <= 10
+        && request.resource.data.proofStoragePath is string;
+      allow update: if isSignedIn() && (isMainAdmin(appId) || (
+        resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid
+        && get(/databases/$(database)/documents/artifacts/$(appId)/public/data/m5_reviewer_applications/$(appDocId)).data.status in ['pending', 'rejected']
+        && request.resource.data.gpaScore is number));
+      allow delete: if false;
+    }
+    // 2. Đơn đăng ký (KHÔNG chứa gpaScore/proofStoragePath; Phó Tướng đọc được proofCheckStatus)
+    match /artifacts/{appId}/public/data/m5_reviewer_applications/{appDocId} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdminOrMain(appId));
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid
+        && appDocId == (request.auth.uid + '_' + request.resource.data.subjectCode)
+        && request.resource.data.status == 'pending' && request.resource.data.proofCheckStatus == 'pending'
+        && !('gpaScore' in request.resource.data) && !('proofStoragePath' in request.resource.data);
+      allow update: if isSignedIn() && resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid
+        && resource.data.status == 'rejected' && request.resource.data.status == 'pending' && request.resource.data.proofCheckStatus == 'pending'
+        && !('gpaScore' in request.resource.data) && !('proofStoragePath' in request.resource.data);
+      allow delete: if false;
+    }
+    // 3. Hồ sơ người bảo chứng / 4. Bản ghi bảo chứng theo phiên bản — chỉ Functions ghi
+    match /artifacts/{appId}/public/data/m5_reviewer_profiles/{reviewerUid} { allow read: if isSignedIn(); allow write: if false; }
+    match /artifacts/{appId}/public/data/m5_verifications/{verId} { allow read: if isSignedIn(); allow write: if false; }
+    // 5. Báo cáo: {docId}_v{contentVersion}_{reporterUid}
+    match /artifacts/{appId}/public/data/m5_reports/{reportId} {
+      allow read: if isSignedIn() && (resource.data.reporterUid == request.auth.uid || isAdminOrMain(appId));
+      allow create: if isSignedIn() && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.contentVersion is int
+        && reportId == (request.resource.data.docId + '_v' + string(request.resource.data.contentVersion) + '_' + request.auth.uid)
+        && request.resource.data.status == 'OPEN'
+        && request.resource.data.reason is string && request.resource.data.reason.size() > 0 && request.resource.data.reason.size() <= 500;
+      allow update: if isSignedIn() && resource.data.reporterUid == request.auth.uid && request.resource.data.reporterUid == request.auth.uid
+        && resource.data.status != 'OPEN' && request.resource.data.status == 'OPEN';
+      allow delete: if false;
+    }
+    // 6. Sổ cái KD
+    match /artifacts/{appId}/public/data/m5_kd_ledger/{eventId} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdminOrMain(appId));
+      allow write: if false;
+    }
+    // 7. KHÓA trường đặc quyền trên documents — GỘP với rule documents hiện có của Module 1–8
+    //    (nếu rule cũ của bạn đã có match này, chỉ chép các điều kiện m9Badge/contentVersion/targetSemester vào)
+    match /artifacts/{appId}/public/data/documents/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid
+        && (!('m9Badge' in request.resource.data) || request.resource.data.m9Badge == null)
+        && (!('contentVersion' in request.resource.data) || request.resource.data.contentVersion == 1);
+      allow update: if isSignedIn()
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['m9Badge', 'contentVersion', 'targetSemester'])
+        && (isStaff(appId) || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'status']));
+      allow delete: if isStaff(appId) || resource.data.uid == request.auth.uid;
+    }
+    // 8. Khóa kdCoins trên profile/info (xem lockCoins() ở trên). `role` không nằm ở đây nên không cần khóa.
+    match /artifacts/{appId}/users/{uid}/profile/info {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == uid && (!lockCoins() || !('kdCoins' in request.resource.data) || request.resource.data.kdCoins == 0);
+      allow update: if isSignedIn() && request.auth.uid == uid
+        && (!lockCoins() || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['kdCoins']));
+    }
+  }
+}
