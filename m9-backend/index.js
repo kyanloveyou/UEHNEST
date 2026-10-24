@@ -32,15 +32,16 @@ const userInfo = uid => db.doc(`artifacts/${M9_CONFIG.APP_ID}/users/${uid}/profi
 const proofDoc = id => db.doc(`artifacts/${M9_CONFIG.APP_ID}/private/m5/reviewer_proofs/${id}`);
 const subjectCode = s => String(s || '').trim().replace(/[\/.\s]+/g, '_');
 const verOf = d => Number(d && d.contentVersion) || 1;
+
 const dateVN = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);   // Asia/Ho_Chi_Minh (UTC+7)
 const rate = st => (st.confirmedWrongVersionsCount || 0) / Math.max(1, st.totalVerifiedVersions || 0);   // COO #8: KHÔNG dùng falseReportRate
 
-/* Vai trò: web KHÔNG lưu role trong profile/info — main_admin = username "khaianhxuanai",
+/* Vai trò: web KHÔNG lưu role trong profile/info — main_admin = custom claim hoặc email quản trị cũ chính xác,
    còn lại lấy từ tempAdmins/{username} còn hạn. username = phần trước @ của email đăng nhập. */
 async function roleOf(req) {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Cần đăng nhập.');
   const uname = String((req.auth.token.email || '').split('@')[0]).toLowerCase();
-  if (uname === M9_CONFIG.MAIN_ADMIN) return { role: 'main_admin', uname };
+  if (req.auth.token.admin === true || req.auth.token.role === 'main_admin' || req.auth.token.email === M9_CONFIG.MAIN_ADMIN + '@khaidayyhub.com') return { role: 'main_admin', uname };
   const s = uname ? await D('tempAdmins', uname).get() : null;
   if (s && s.exists && s.data().expiresAt > Date.now() && ['mod', 'admin'].includes(s.data().role)) return { role: s.data().role, uname };
   return { role: 'user', uname };
