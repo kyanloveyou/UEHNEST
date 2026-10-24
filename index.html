@@ -4417,6 +4417,333 @@ window.reverseSelectedSubjectChapters = async function() {
           K.addTile({ id: 'provjp', icon: 'fa-crown', color: 'yellow', title: 'KhaiDayy provjp', desc: 'Tặng KD, Event phát KD, đặc quyền', when: () => K.admin(), onClick: openPJ });
           K.roleHooks.push(() => { if (!K.admin()) K.close('kdx-pj'); });
         });
+        /* ═══════════════════════════════════════════════════════════════════
+           KDX · MODULE 9 — NGƯỜI BẢO CHỨNG & NHÃN "VERIFIED"  (theo Hợp đồng Tích hợp v3)
+           • Đăng ký bảo chứng theo môn (điểm ≥ 8.0 + ảnh bảng điểm) → main_admin duyệt
+           • Nhận duyệt tài liệu → checklist → gắn nhãn "Verified bởi … · UEH · Môn · Học kỳ" (+15 KD, trần 60/ngày)
+           • Báo cáo sai sót (đủ N báo cáo tự tạm gỡ nhãn) → main_admin phúc tra
+           • Mọi thao tác đặc quyền đi qua Cloud Functions (onCall Gen 2, asia-southeast1)
+           • Client KHÔNG tự ghi kdCoins / m9Badge / contentVersion / sổ cái
+           • Chỉ dùng đúng 6 đường dẫn dữ liệu M9 (COO #11). Cần dán sau Module 8 (provjp).
+           Feature Flag: đặt window.KDX_M9_FLAGS = { functions:false } TRƯỚC khối này để tắt.
+           Rollback: xóa đúng khối MODULE 9 này — không module nào khác phụ thuộc.
+           ═══════════════════════════════════════════════════════════════════ */
+        ;(window.KDX_MOD || function () { console.warn('[KDX] Chưa dán PHẦN LÕI'); })('reviewer', function (K) {
+          const FS = 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+          const FN = 'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js';
+          const ST = 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
+          const REGION = 'asia-southeast1';
+          const MIN_GPA = 8.0, REWARD = 15, DAILY_CAP = 60;
+          const FLAGS = window.KDX_M9_FLAGS = Object.assign({ functions: true, interceptLegacyReward: false, badge: true }, window.KDX_M9_FLAGS || {});
+          const subjectCode = s => String(s || '').trim().replace(/[\/.\s]+/g, '_');
+          const showSubject = c => String(c || '').replace(/_/g, ' ');
+          const verOf = d => Number(d && d.contentVersion) || 1;
+          const THIS_APP = () => (typeof app !== 'undefined' ? app : undefined);
+          const myUid = () => currentUser && currentUser.uid;
+
+          let profilesMap = {}, verifs = [], myApps = [];
+          const ui = { tab: 'apply', onlyVerified: false, busy: false };
+          const ring = [], seen = new Set(), subs = [];
+          let _fs, _fn, _st;
+          const FSM = () => _fs || (_fs = import(FS));
+          const FNM = () => _fn || (_fn = import(FN));
+          const STM = () => _st || (_st = import(ST));
+
+          /* ── gọi Cloud Function (onCall) ── */
+          async function call(name, data) {
+            if (!FLAGS.functions) throw new Error('Cloud Functions của Module 9 đang tắt (Feature Flag).');
+            const m = await FNM();
+            try { const r = await m.httpsCallable(m.getFunctions(THIS_APP(), REGION), name)(data); return r.data || {}; }
+            catch (e) {
+              if (['functions/not-found', 'functions/unavailable', 'functions/internal'].includes(e.code)) throw new Error('Cloud Function "' + name + '" chưa được deploy (điểm chặn B01).');
+              throw e;
+            }
+          }
+
+          /* ── điều kiện hiển thị nhãn: AND trên RAM, 0 lượt đọc phụ ── */
+          const isActive = (uid, subject) => { const p = profilesMap[uid], s = p && p.activeSubjects && p.activeSubjects[subjectCode(subject)]; return !!s && s.status === 'active'; };
+          K.m9Valid = d => { const b = d && d.m9Badge; return !!(b && b.status === 'verified' && b.contentVersion === verOf(d) && isActive(b.reviewerUid, d.subject)); };
+          const mySubjects = () => { const p = profilesMap[myUid()]; return p && p.activeSubjects ? Object.keys(p.activeSubjects).filter(c => p.activeSubjects[c].status === 'active') : []; };
+
+          /* ── Cửa ngõ chỉ-đọc cho Module 10 & 11 ── */
+          window.KDX_M9_GATEWAY = Object.freeze({
+            getActiveReviewersBySubject: async subject => {
+              const c = subjectCode(subject);
+              return Object.values(profilesMap).filter(p => p.activeSubjects && p.activeSubjects[c] && p.activeSubjects[c].status === 'active').map(p => {
+                const st = p.stats || {};
+                return { uid: p.uid || p.id, displayName: p.displayName || '', school: 'UEH', learnedSemester: p.activeSubjects[c].learnedSemester || 'chưa xác định',
+                  stats: { totalVerifiedVersions: st.totalVerifiedVersions || 0, reportedDocsCount: st.reportedDocsCount || 0, confirmedWrongVersionsCount: st.confirmedWrongVersionsCount || 0, confirmedWrongRate: st.confirmedWrongRate || 0 } };
+              });
+            },
+            getValidVerificationForDoc: async docId => {
+              const d = (K.data.docs || []).find(x => x.id === docId);
+              if (!d || !K.m9Valid(d)) return null;
+              const b = d.m9Badge;
+              return { isVerified: true, contentVersion: b.contentVersion, reviewerUid: b.reviewerUid, reviewerName: b.reviewerName, school: 'UEH', subject: d.subject,
+                learnedSemester: b.learnedSemester || 'chưa xác định', targetSemester: b.targetSemester || d.targetSemester || 'chưa xác định', verifiedAt: K.ts(b.verifiedAt) };
+            },
+            subscribeVerificationImpressions: cb => { if (typeof cb !== 'function') return () => {}; subs.push(cb); return () => { const i = subs.indexOf(cb); if (i >= 0) subs.splice(i, 1); }; },
+            getRecentVerificationImpressions: () => ring.slice()
+          });
+          function pushImpression(d) {
+            const key = d.id + '_v' + verOf(d); let skip = false;
+            try { if (sessionStorage.getItem('m9imp_' + key)) skip = true; else sessionStorage.setItem('m9imp_' + key, '1'); } catch (e) { if (seen.has(key)) skip = true; else seen.add(key); }
+            if (skip) return;
+            const ev = { eventType: 'VERIFIED_BADGE_VIEWED', docId: d.id, contentVersion: verOf(d), reviewerUid: d.m9Badge.reviewerUid, viewerUid: myUid() || '', ts: Date.now() };
+            ring.push(ev); if (ring.length > 200) ring.shift();
+            subs.slice().forEach(fn => { try { fn(ev); } catch (e) { console.warn('[M9]', e); } });
+          }
+          const io = ('IntersectionObserver' in window) ? new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting && en.target._m9doc) { pushImpression(en.target._m9doc); io.unobserve(en.target); } }), { threshold: 0.5 }) : null;
+
+          /* ── 1. Gắn nhãn lên thẻ tài liệu có sẵn của Module 1 (không sửa mã Module 1) ── */
+          function decorate() {
+            const list = document.getElementById('kdx-docs-list'); if (!list) return;
+            const idx = new Map(); (K.data.docs || []).forEach(d => idx.set(K.norm(d.title) + '|' + K.norm(d.subject), d));
+            list.querySelectorAll(':scope > div').forEach(card => {
+              const h4 = card.querySelector('h4'), ic = card.querySelector('.fa-book'); if (!h4 || !ic) return;
+              const d = idx.get(K.norm(h4.textContent) + '|' + K.norm(ic.parentElement.textContent)); if (!d) return;
+              const valid = FLAGS.badge && K.m9Valid(d), b = d.m9Badge;
+              const susp = FLAGS.badge && b && b.status === 'suspended' && b.contentVersion === verOf(d);
+              const sig = d.id + ':' + (valid ? b.reviewerUid + b.contentVersion : susp ? 's' : 'n') + ':' + (d.verified ? 1 : 0) + ':' + ui.onlyVerified;
+              if (card.dataset.m9 === sig) return;
+              card.dataset.m9 = sig;
+              card.querySelectorAll('[data-m9-x]').forEach(n => n.remove());
+              [...card.querySelectorAll('span')].forEach(s => {
+                if (!/ĐÃ XÁC THỰC/.test(s.textContent) || s.dataset.m9old) return;
+                s.dataset.m9old = '1';
+                if (valid) s.classList.add('hidden'); else s.innerHTML = '<i class="fa-solid fa-clock-rotate-left mr-1"></i>XÁC THỰC THEO CƠ CHẾ CŨ';
+              });
+              if (valid) {
+                const mine = d.uid === myUid();
+                card.insertAdjacentHTML('afterbegin', '<div data-m9-x class="rounded-xl border border-emerald-400/60 bg-emerald-900/30 px-3 py-2 text-xs text-emerald-200 flex items-start gap-2"><i class="fa-solid fa-shield-check mt-0.5 text-emerald-300"></i><div class="min-w-0 flex-1"><b>Verified bởi ' + K.esc(b.reviewerName) + '</b> · UEH · ' + K.esc(d.subject) + ' · ' + K.esc(b.learnedSemester || 'chưa xác định') +
+                  (b.targetSemester && b.targetSemester !== 'chưa xác định' ? '<div class="text-[10px] text-emerald-300/70">Áp dụng cho: ' + K.esc(b.targetSemester) + '</div>' : '') + '</div>' +
+                  (mine ? '' : '<button data-m9-report="' + K.esc(d.id) + '" class="shrink-0 text-[10px] font-bold text-rose-300 hover:text-white hover:bg-rose-500/70 border border-rose-500/50 rounded-lg px-2 py-1"><i class="fa-solid fa-flag mr-1"></i>Báo sai</button>') + '</div>');
+                if (io) { card._m9doc = d; io.observe(card); }
+              } else if (susp) {
+                card.insertAdjacentHTML('afterbegin', '<div data-m9-x class="rounded-xl border border-amber-400/60 bg-amber-900/30 px-3 py-2 text-xs text-amber-200"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Nhãn Verified đang được tạm gỡ chờ phúc tra.</div>');
+              }
+              card.classList.toggle('hidden', ui.onlyVerified && !valid);
+            });
+          }
+          function attachDocs() {
+            const list = document.getElementById('kdx-docs-list'), mine = document.getElementById('kdx-doc-mine'); if (!list || !mine) return;
+            if (!document.getElementById('m9-only-verified')) mine.closest('label').insertAdjacentHTML('afterend', '<label class="flex items-center gap-2 cursor-pointer select-none"><input id="m9-only-verified" type="checkbox" class="accent-emerald-500"' + (ui.onlyVerified ? ' checked' : '') + '> Chỉ Verified</label>');
+            if (!list._m9obs) { list._m9obs = new MutationObserver(decorate); list._m9obs.observe(list, { childList: true }); }
+            decorate();
+          }
+          const oldOpen = window.openDocumentArchive;
+          window.openDocumentArchive = function () { const r = oldOpen ? oldOpen.apply(this, arguments) : undefined; try { attachDocs(); setTimeout(attachDocs, 120); } catch (e) { console.warn('[M9]', e); } return r; };
+
+          /* ── 2. Nhãn phụ cho nút Admin cũ (không đổi hành vi) ── */
+          function decorateAdmin() {
+            document.querySelectorAll('#kdx-center-body [data-kdx-a="approve"], #kdx-center-body [data-kdx-a="verify"], #kdx-center-body [data-kdx-a="verifyonly"]').forEach(b => {
+              if (b.dataset.m9) return; b.dataset.m9 = '1';
+              b.title = 'Duyệt hiển thị (Xác thực cũ) — KHÔNG phải nhãn Verified của Module 9';
+              b.insertAdjacentHTML('beforeend', '<span class="ml-1 text-[9px] opacity-70">(xác thực cũ)</span>');
+            });
+          }
+          new MutationObserver(() => {
+            const c = document.getElementById('kdx-center-body');
+            if (c && !c._m9obs) { c._m9obs = new MutationObserver(decorateAdmin); c._m9obs.observe(c, { childList: true, subtree: true }); decorateAdmin(); }
+          }).observe(document.body, { childList: true });
+
+          /* ── 3. Chặn luồng thưởng KD cũ (client không còn được tự cộng kdCoins) — mặc định TẮT ── */
+          document.addEventListener('click', async function (e) {
+            if (!FLAGS.interceptLegacyReward) return;
+            const dBtn = e.target.closest('#kdx-docs-root [data-kdx-act="claim"]'), qBtn = e.target.closest('#kdx-quest-root [data-kdx-q]');
+            if (!dBtn && !qBtn) return;
+            e.stopImmediatePropagation(); e.preventDefault();
+            try {
+              const r = await call('m9_claimLegacyReward', dBtn ? { type: 'doc' } : { type: 'quest', targetId: qBtn.dataset.kdxQ });
+              if (r.amount) { window.userKdCoins = (K.coins() || 0) + r.amount; K.paintCoins(); }
+              K.toast(r.amount ? '+' + r.amount + ' KD Credit' : 'Không có phần thưởng mới.');
+            } catch (err) { K.toast('Lỗi: ' + (err.message || err), 'err'); }
+          }, true);
+
+          /* ── 4. Giao diện chính ── */
+          const F = 'w-full bg-slate-900/80 border border-slate-600 rounded-xl py-2.5 px-3 text-white text-sm focus:outline-none focus:border-emerald-500';
+          const pill = (t, c) => '<span class="px-2 py-0.5 rounded-full text-[10px] font-black border bg-' + c + '-500/20 text-' + c + '-300 border-' + c + '-500/50">' + t + '</span>';
+          const appBadge = a => pill(a.status === 'approved' ? 'ĐÃ DUYỆT' : a.status === 'rejected' ? 'BỊ TỪ CHỐI' : 'CHỜ DUYỆT', a.status === 'approved' ? 'emerald' : a.status === 'rejected' ? 'rose' : 'sky') + ' ' +
+            pill(a.proofCheckStatus === 'passed' ? 'BẢNG ĐIỂM: ĐẠT' : a.proofCheckStatus === 'failed' ? 'BẢNG ĐIỂM: CHƯA ĐẠT' : 'BẢNG ĐIỂM: CHỜ KIỂM', a.proofCheckStatus === 'passed' ? 'emerald' : a.proofCheckStatus === 'failed' ? 'rose' : 'slate');
+          const pendingApps = () => (K.data.m9_apps || []).filter(a => a.status === 'pending').length;
+          const queueDocs = () => {
+            const subj = new Set(mySubjects()), uid = myUid(); if (!subj.size) return [];
+            return (K.data.docs || []).filter(d => d.status === 'approved' && d.uid !== uid && subj.has(subjectCode(d.subject)) && !K.m9Valid(d));
+          };
+          const verOfDoc = d => verifs.find(v => v.id === d.id + '_v' + verOf(d));
+          const TABS = () => [
+            { id: 'apply', icon: 'fa-id-card', label: 'Đăng ký bảo chứng', ok: true },
+            { id: 'queue', icon: 'fa-list-check', label: 'Tài liệu cần bảo chứng', ok: mySubjects().length > 0, badge: queueDocs().length },
+            { id: 'review', icon: 'fa-user-check', label: 'Duyệt đơn', ok: K.admin(), badge: pendingApps() },
+            { id: 'reports', icon: 'fa-flag', label: 'Phúc tra báo cáo', ok: K.admin(), badge: (K.data.m9_reports || []).filter(r => r.status === 'OPEN').length }
+          ].filter(t => t.ok);
+
+          function openM9() {
+            const body = K.modal('kdx-m9', { title: 'Người bảo chứng · Nhãn Verified', icon: 'fa-shield-check', color: 'emerald', width: 'max-w-4xl', z: 290 });
+            if (!body.dataset.bound) { body.dataset.bound = '1'; body.addEventListener('click', onClick); }
+            K.open('kdx-m9'); draw();
+          }
+          function draw() {
+            const body = document.getElementById('kdx-m9-body'); if (!body) return;
+            if (!TABS().some(t => t.id === ui.tab)) ui.tab = 'apply';
+            if (body.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && ui.tab === 'apply') return;   // đang gõ dở: không vẽ lại
+            body.innerHTML = '<div class="flex flex-wrap gap-2 mb-5">' + TABS().map(t =>
+              '<button data-m9-a="tab" data-t="' + t.id + '" class="relative px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ' + (t.id === ui.tab ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg' : 'bg-slate-900/60 text-slate-300 border-slate-600 hover:border-emerald-400') + '"><i class="fa-solid ' + t.icon + ' mr-2"></i>' + t.label +
+              (t.badge ? '<span class="absolute -top-2 -right-2 min-w-[1.4rem] h-6 px-1.5 rounded-full bg-rose-500 text-white text-xs font-black flex items-center justify-center">' + t.badge + '</span>' : '') + '</button>').join('') + '</div>' +
+              '<div class="text-left">' + (ui.tab === 'apply' ? vApply() : ui.tab === 'queue' ? vQueue() : ui.tab === 'review' ? vReview() : vReports()) + '</div>';
+          }
+          function redraw() { try { if (K.isOpen('kdx-m9')) draw(); decorate(); K.renderHub(); } catch (e) { console.warn('[M9]', e); } }
+
+          function vApply() {
+            const p = profilesMap[myUid()], act = p && p.activeSubjects ? Object.entries(p.activeSubjects) : [];
+            const subs = Object.keys(questionDatabase || {});
+            return '<div class="text-xs text-slate-400 bg-slate-900/60 border border-slate-700 rounded-xl p-3 leading-relaxed mb-5"><i class="fa-solid fa-circle-info text-emerald-400 mr-1"></i>Bạn đã học môn nào đạt <b class="text-amber-300">từ ' + MIN_GPA.toFixed(1) + '/10</b> có thể đăng ký bảo chứng. Mỗi tài liệu bạn xác nhận đúng nhận <b class="text-amber-300">+' + REWARD + ' KD</b> (tối đa ' + DAILY_CAP + ' KD/ngày). Điểm và ảnh bảng điểm chỉ bạn và Admin chính xem được; Phó Tướng chỉ thấy "đạt / chưa đạt".</div>' +
+              (act.length ? '<div class="mb-5"><div class="text-sm font-bold text-slate-300 mb-2">Môn bạn đang bảo chứng</div><div class="flex flex-wrap gap-2">' + act.map(([c, s]) => pill(K.esc(showSubject(c)) + ' · ' + K.esc(s.learnedSemester || ''), s.status === 'active' ? 'emerald' : 'amber') + (s.status === 'active' ? '' : pill('ĐÌNH CHỈ', 'rose'))).join('') + '</div></div>' : '') +
+              (myApps.length ? '<div class="mb-5 space-y-2"><div class="text-sm font-bold text-slate-300">Đơn của bạn</div>' + myApps.map(a => '<div class="p-3 rounded-xl bg-slate-900/60 border border-slate-700 flex flex-wrap items-center gap-2"><b class="text-white text-sm">' + K.esc(showSubject(a.subjectCode)) + '</b>' + appBadge(a) + '<span class="text-[11px] text-slate-500">lần ' + (a.attemptCount || 1) + '</span></div>').join('') + '</div>' : '') +
+              '<div class="space-y-3 border-t border-slate-700 pt-5"><div class="text-sm font-bold text-emerald-300"><i class="fa-solid fa-paper-plane mr-2"></i>Nộp đơn mới / nộp lại đơn bị từ chối</div>' +
+              '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-400 mb-1">Môn học *</label><input id="m9-subj" list="m9-subj-list" class="' + F + '" placeholder="Chọn hoặc nhập môn"><datalist id="m9-subj-list">' + subs.map(s => '<option value="' + K.esc(s) + '">').join('') + '</datalist></div>' +
+              '<div><label class="block text-xs font-bold text-slate-400 mb-1">Điểm môn (0–10) *</label><input id="m9-gpa" type="number" step="0.1" min="0" max="10" class="' + F + '" placeholder="8.5"></div></div>' +
+              '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="block text-xs font-bold text-slate-400 mb-1">Học kỳ đã học</label><input id="m9-sem" class="' + F + '" placeholder="VD: HK1 2024-2025"></div>' +
+              '<div><label class="block text-xs font-bold text-slate-400 mb-1">Ảnh / PDF bảng điểm * (≤ 5MB)</label><input id="m9-file" type="file" accept="image/*,application/pdf" class="' + F + '"></div></div>' +
+              '<div id="m9-msg" class="text-sm"></div>' +
+              '<button data-m9-a="apply" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-black rounded-xl shadow-lg"><i class="fa-solid fa-paper-plane mr-2"></i>Gửi đơn bảo chứng</button></div>';
+          }
+
+          function vQueue() {
+            const uid = myUid(), mine = verifs.filter(v => v.reviewerUid === uid && v.status === 'claimed');
+            const mineHtml = mine.map(v => {
+              const d = (K.data.docs || []).find(x => x.id === v.docId); if (!d) return '';
+              return '<div data-m9-card="' + K.esc(v.docId) + '" data-v="' + v.contentVersion + '" class="p-4 rounded-2xl bg-emerald-900/20 border border-emerald-500/40 space-y-3"><div class="font-bold text-white">' + K.esc(d.title) + ' <span class="text-xs text-slate-400 font-normal">· ' + K.esc(d.subject) + ' · ' + K.esc(d.teacher || 'chưa rõ GV') + ' · v' + v.contentVersion + '</span></div>' +
+                '<a href="' + K.esc(K.safeUrl(d.url)) + '" target="_blank" rel="noopener noreferrer" class="inline-block text-sm text-cyan-300 hover:underline"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Mở tài liệu để kiểm tra</a>' +
+                ['correctAnswers|Đáp án / nội dung chính xác', 'correctLecturer|Đúng giảng viên', 'stillRelevant|Còn phù hợp với đề hiện hành'].map(x => { const [k, l] = x.split('|'); return '<label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer"><input type="checkbox" data-m9-ck="' + k + '" class="accent-emerald-500"> ' + l + '</label>'; }).join('') +
+                '<input data-m9-tsem class="' + F + '" placeholder="Học kỳ tài liệu áp dụng (VD: HK1 2025-2026)" value="' + K.esc(d.targetSemester || '') + '">' +
+                '<div class="flex gap-2"><button data-m9-a="verify" class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black rounded-xl text-sm"><i class="fa-solid fa-badge-check mr-2"></i>Xác nhận & gắn nhãn Verified</button><button data-m9-a="release" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-sm">Nhả bài</button></div></div>';
+            }).join('');
+            const q = queueDocs().filter(d => !mine.some(v => v.docId === d.id)).map(d => {
+              const v = verOfDoc(d), taken = v && v.status === 'claimed';
+              return '<div class="p-3 rounded-xl bg-slate-900/60 border border-slate-700 flex flex-wrap items-center gap-3"><div class="flex-1 min-w-0"><div class="font-bold text-white text-sm truncate">' + K.esc(d.title) + '</div><div class="text-[11px] text-slate-400">' + K.esc(d.subject) + ' · ' + K.esc(d.teacher || 'chưa rõ GV') + ' · v' + verOf(d) + (d.m9Badge && d.m9Badge.status === 'suspended' ? ' · đang tạm gỡ nhãn' : '') + '</div></div>' +
+                (taken ? pill('ĐANG ĐƯỢC NHẬN: ' + K.esc(v.reviewerName || ''), 'amber') : '<button data-m9-a="claim" data-id="' + K.esc(d.id) + '" data-v="' + verOf(d) + '" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-white font-bold rounded-xl text-sm border border-emerald-500/50">Nhận duyệt</button>') + '</div>';
+            }).join('');
+            return (mineHtml ? '<div class="mb-5 space-y-3"><div class="text-sm font-bold text-emerald-300">Bài bạn đang giữ</div>' + mineHtml + '</div>' : '') +
+              '<div class="space-y-2"><div class="text-sm font-bold text-slate-300">Tài liệu chưa có nhãn trong môn của bạn</div>' + (q || '<div class="text-center py-10 text-slate-500"><i class="fa-solid fa-circle-check text-4xl mb-3 block opacity-50"></i>Không còn tài liệu nào cần bảo chứng.</div>') + '</div>';
+          }
+
+          function vReview() {
+            const apps = K.data.m9_apps || [], main = K.main();
+            const profs = Object.values(profilesMap);
+            return (K.errors.m9_apps ? '<div class="mb-4 p-4 rounded-xl bg-rose-900/30 border border-rose-500/50 text-rose-200 text-sm">Không đọc được đơn: ' + K.esc(K.errors.m9_apps) + '</div>' : '') +
+              (main ? '' : '<div class="mb-4 text-xs text-slate-400 bg-slate-900/60 border border-slate-700 rounded-xl p-3">Phó Tướng chỉ xem hàng đợi và trạng thái bảng điểm để đôn đốc. Việc kiểm tra, duyệt và đình chỉ thuộc Admin chính.</div>') +
+              '<div class="space-y-2">' + (apps.length ? apps.slice().sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1) || K.ts(b.updatedAt) - K.ts(a.updatedAt)).map(a =>
+                '<div class="p-3 rounded-xl bg-slate-900/60 border border-slate-700 flex flex-wrap items-center gap-2"><div class="flex-1 min-w-0"><div class="font-bold text-white text-sm">' + K.esc(a.authorName || a.uid) + ' <span class="text-slate-400 font-normal">· ' + K.esc(showSubject(a.subjectCode)) + ' · ' + K.esc(a.learnedSemester || '') + '</span></div><div class="mt-1 flex flex-wrap gap-1">' + appBadge(a) + '</div></div>' +
+                (main ? '<button data-m9-a="proof" data-id="' + K.esc(a.id) + '" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs"><i class="fa-solid fa-image mr-1"></i>Xem bảng điểm</button>' +
+                  (a.status === 'pending' ? '<button data-m9-a="check" data-ok="1" data-id="' + K.esc(a.id) + '" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-white rounded-lg text-xs border border-emerald-500/50">Đạt</button><button data-m9-a="check" data-ok="0" data-id="' + K.esc(a.id) + '" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white rounded-lg text-xs border border-rose-500/50">Chưa đạt</button>' +
+                    '<button data-m9-a="decide" data-d="approve" data-id="' + K.esc(a.id) + '" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black rounded-lg text-xs">Duyệt</button><button data-m9-a="decide" data-d="reject" data-id="' + K.esc(a.id) + '" class="px-3 py-1.5 bg-rose-500 hover:bg-rose-400 text-white font-black rounded-lg text-xs">Từ chối</button>' : '') : '') + '</div>').join('') :
+                '<div class="text-center py-10 text-slate-500">Chưa có đơn nào.</div>') + '</div>' +
+              (main && profs.length ? '<div class="mt-6 border-t border-slate-700 pt-5"><div class="text-sm font-bold text-slate-300 mb-2">Người bảo chứng</div><div class="space-y-2">' + profs.map(p => Object.entries(p.activeSubjects || {}).map(([c, s]) =>
+                '<div class="p-3 rounded-xl bg-slate-900/60 border border-slate-700 flex flex-wrap items-center gap-2"><div class="flex-1 text-sm text-white">' + K.esc(p.displayName || p.id) + ' <span class="text-slate-400">· ' + K.esc(showSubject(c)) + '</span> ' + pill(s.status === 'active' ? 'ĐANG HOẠT ĐỘNG' : 'ĐÌNH CHỈ', s.status === 'active' ? 'emerald' : 'rose') + '<span class="text-[11px] text-slate-500 ml-2">sai xác nhận: ' + (((p.stats || {}).confirmedWrongRate || 0) * 100).toFixed(0) + '%</span></div>' +
+                '<button data-m9-a="decide" data-d="' + (s.status === 'active' ? 'suspend' : 'reinstate') + '" data-id="' + K.esc((p.uid || p.id) + '_' + c) + '" class="px-3 py-1.5 rounded-lg text-xs border ' + (s.status === 'active' ? 'bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border-rose-500/50' : 'bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-white border-emerald-500/50') + '">' + (s.status === 'active' ? 'Đình chỉ' : 'Khôi phục') + '</button></div>').join('')).join('') + '</div></div>' : '');
+          }
+
+          function vReports() {
+            const rs = (K.data.m9_reports || []).filter(r => r.status === 'OPEN'), g = {};
+            rs.forEach(r => { const k = r.docId + '_v' + r.contentVersion; (g[k] = g[k] || []).push(r); });
+            const main = K.main();
+            return (K.errors.m9_reports ? '<div class="mb-4 p-4 rounded-xl bg-rose-900/30 border border-rose-500/50 text-rose-200 text-sm">Không đọc được báo cáo: ' + K.esc(K.errors.m9_reports) + '</div>' : '') +
+              (Object.keys(g).length ? Object.entries(g).map(([k, arr]) => { const d = (K.data.docs || []).find(x => x.id === arr[0].docId);
+                return '<div class="p-4 mb-3 rounded-2xl bg-slate-900/60 border border-rose-500/30 space-y-2"><div class="font-bold text-white">' + K.esc(d ? d.title : arr[0].docId) + ' <span class="text-xs text-slate-400 font-normal">· v' + arr[0].contentVersion + ' · ' + arr.length + ' báo cáo đang mở</span></div>' +
+                  arr.map(r => '<div class="text-xs text-slate-300 bg-slate-800/80 rounded-lg px-3 py-2"><b class="text-rose-300">' + K.esc(r.reason) + '</b>' + (r.detail ? ' — ' + K.esc(r.detail) : '') + '</div>').join('') +
+                  (main ? '<div class="flex gap-2 pt-1"><button data-m9-a="resolve" data-v="valid" data-id="' + K.esc(arr[0].docId) + '" data-ver="' + arr[0].contentVersion + '" class="px-3 py-2 bg-rose-500 hover:bg-rose-400 text-white font-black rounded-lg text-xs">Báo cáo đúng — gỡ nhãn & ghi nhận sai</button><button data-m9-a="resolve" data-v="invalid" data-id="' + K.esc(arr[0].docId) + '" data-ver="' + arr[0].contentVersion + '" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black rounded-lg text-xs">Báo cáo sai — khôi phục nhãn</button></div>' : '<div class="text-[11px] text-slate-500">Chỉ Admin chính được phúc tra.</div>') + '</div>'; }).join('') :
+                '<div class="text-center py-10 text-slate-500"><i class="fa-solid fa-flag-checkered text-4xl mb-3 block opacity-50"></i>Không có báo cáo nào đang mở.</div>');
+          }
+
+          /* ── 5. Hành động ── */
+          async function submitApply() {
+            const g = id => document.getElementById(id), msg = g('m9-msg'), say = (t, bad) => { msg.innerHTML = '<span class="' + (bad ? 'text-rose-400' : 'text-emerald-300') + '">' + K.esc(t) + '</span>'; };
+            const subject = g('m9-subj').value.trim(), gpa = Number(g('m9-gpa').value), sem = g('m9-sem').value.trim() || 'chưa xác định', file = g('m9-file').files[0];
+            if (!subject) return say('Hãy chọn hoặc nhập môn học.', 1);
+            if (!(gpa >= 0 && gpa <= 10)) return say('Điểm phải nằm trong khoảng 0–10.', 1);
+            if (gpa < MIN_GPA) return say('Điểm môn phải từ ' + MIN_GPA.toFixed(1) + ' trở lên mới đăng ký được.', 1);
+            if (!file) return say('Hãy chọn ảnh/PDF bảng điểm.', 1);
+            if (file.size >= 5 * 1024 * 1024) return say('File phải nhỏ hơn 5MB.', 1);
+            if (!/^image\/|^application\/pdf$/.test(file.type)) return say('Chỉ nhận ảnh hoặc PDF.', 1);
+            if (ui.busy) return; ui.busy = true; say('Đang gửi...');
+            try {
+              const f = await FSM(), s = await STM(), uid = myUid(), code = subjectCode(subject), id = uid + '_' + code;
+              const appRef = K.doc('m5_reviewer_applications', id), ex = await f.getDoc(appRef);
+              if (ex.exists() && ex.data().status !== 'rejected') throw new Error('Đơn môn này đang ở trạng thái "' + ex.data().status + '", không thể nộp lại.');
+              const path = 'artifacts/' + appId + '/private/m5/reviewer_proofs/' + uid + '/' + code + '/proof_' + Date.now() + '_' + file.name.replace(/[^\w.\-]+/g, '_');
+              await s.uploadBytes(s.ref(s.getStorage(THIS_APP()), path), file);
+              await f.setDoc(f.doc(db, 'artifacts', appId, 'private', 'm5', 'reviewer_proofs', id), { uid, subjectCode: code, gpaScore: gpa, proofStoragePath: path, minGpaRequired: MIN_GPA, updatedAt: f.serverTimestamp() });
+              const base = { uid, authorName: K.myName(), subjectCode: code, learnedSemester: sem, proofCheckStatus: 'pending', status: 'pending', attemptCount: ex.exists() ? (ex.data().attemptCount || 1) + 1 : 1, reviewedBy: null, reviewedAt: null, updatedAt: f.serverTimestamp() };
+              await f.setDoc(appRef, ex.exists() ? Object.assign(base, { createdAt: ex.data().createdAt }) : Object.assign(base, { createdAt: f.serverTimestamp() }));
+              K.toast('Đã gửi đơn bảo chứng! Chờ Admin chính kiểm tra bảng điểm.');
+              ui.busy = false; document.activeElement && document.activeElement.blur(); draw();
+            } catch (err) { ui.busy = false; say('Không gửi được: ' + (err.message || err), 1); }
+          }
+          async function onClick(e) {
+            const b = e.target.closest('[data-m9-a]'); if (!b) return;
+            const a = b.dataset.m9A, id = b.dataset.id;
+            if (a === 'tab') { ui.tab = b.dataset.t; draw(); return; }
+            if (a === 'apply') return submitApply();
+            if (ui.busy) return; ui.busy = true; b.disabled = true;
+            try {
+              if (a === 'claim') { await call('m9_claimDocument', { docId: id, contentVersion: Number(b.dataset.v) }); K.toast('Đã nhận duyệt. Hãy mở tài liệu và hoàn thành checklist.'); }
+              else if (a === 'release') { const c = b.closest('[data-m9-card]'); await call('m9_reassignClaim', { docId: c.dataset.m9Card, contentVersion: Number(c.dataset.v), action: 'release' }); K.toast('Đã nhả bài.', 'warn'); }
+              else if (a === 'verify') {
+                const c = b.closest('[data-m9-card]'), ck = {}; c.querySelectorAll('[data-m9-ck]').forEach(i => { ck[i.dataset.m9Ck] = i.checked; });
+                if (!ck.correctAnswers || !ck.correctLecturer || !ck.stillRelevant) throw new Error('Cần tick đủ 3 mục checklist mới gắn nhãn được.');
+                const r = await call('m9_submitVerification', { docId: c.dataset.m9Card, contentVersion: Number(c.dataset.v), checklist: ck, targetSemester: c.querySelector('[data-m9-tsem]').value.trim() || 'chưa xác định' });
+                if (r.amount) { window.userKdCoins = (K.coins() || 0) + r.amount; K.paintCoins(); }
+                K.toast(r.amount ? 'Đã gắn nhãn Verified! +' + r.amount + ' KD' : 'Đã gắn nhãn Verified (hôm nay đã đạt trần ' + DAILY_CAP + ' KD nên +0 KD).');
+              }
+              else if (a === 'check') { await call('m9_reviewApplication', { appDocId: id, action: b.dataset.ok === '1' ? 'check_pass' : 'check_fail' }); K.toast('Đã ghi kết quả kiểm tra bảng điểm.'); }
+              else if (a === 'decide') {
+                const d = b.dataset.d; if (d === 'suspend' && !confirm('Đình chỉ người này ở môn này? Mọi nhãn của họ ở môn đó sẽ biến mất ngay.')) { ui.busy = false; b.disabled = false; return; }
+                await call('m9_reviewApplication', { appDocId: id, action: d }); K.toast('Đã cập nhật.', d === 'approve' || d === 'reinstate' ? 'ok' : 'warn');
+              }
+              else if (a === 'proof') {
+                const f = await FSM(), s = await STM(), snap = await f.getDoc(f.doc(db, 'artifacts', appId, 'private', 'm5', 'reviewer_proofs', id));
+                if (!snap.exists()) throw new Error('Chưa có minh chứng.');
+                const url = await s.getDownloadURL(s.ref(s.getStorage(THIS_APP()), snap.data().proofStoragePath));
+                window.open(url, '_blank', 'noopener'); K.toast('Điểm khai báo: ' + snap.data().gpaScore + '/10');
+              }
+              else if (a === 'resolve') {
+                const ver = Number(b.dataset.ver); if (!confirm(b.dataset.v === 'valid' ? 'Xác nhận bảo chứng SAI? Nhãn bị gỡ vĩnh viễn ở phiên bản này.' : 'Xác nhận báo cáo SAI? Nhãn sẽ được khôi phục.')) { ui.busy = false; b.disabled = false; return; }
+                await call('m9_resolveReports', { docId: id, contentVersion: ver, verdict: b.dataset.v, resolutionId: id + '_v' + ver + '_' + Date.now() }); K.toast('Đã phúc tra.');
+              }
+            } catch (err) { K.toast('Lỗi: ' + (err.message || err), 'err'); }
+            ui.busy = false; redraw();
+          }
+          /* nút "Báo sai" trên thẻ tài liệu + ô lọc "Chỉ Verified" */
+          document.addEventListener('click', async function (e) {
+            const b = e.target.closest('[data-m9-report]'); if (!b) return;
+            const d = (K.data.docs || []).find(x => x.id === b.dataset.m9Report); if (!d || ui.busy) return;
+            const reason = prompt('Lý do báo cáo nhãn Verified này sai (tối đa 500 ký tự):'); if (!reason || !reason.trim()) return;
+            ui.busy = true;
+            try { const r = await call('m9_submitReport', { docId: d.id, contentVersion: verOf(d), reason: reason.trim().slice(0, 500), detail: '' }); K.toast(r.suspended ? 'Đã đủ báo cáo — nhãn được tạm gỡ chờ phúc tra.' : 'Đã gửi báo cáo. Cảm ơn bạn!'); }
+            catch (err) { K.toast('Lỗi: ' + (err.message || err), 'err'); }
+            ui.busy = false;
+          });
+          document.addEventListener('change', e => { if (e.target.id === 'm9-only-verified') { ui.onlyVerified = e.target.checked; decorate(); } });
+
+          /* ── 6. Đồng bộ dữ liệu: mỗi bộ sưu tập 1 listener duy nhất ── */
+          K.onBoot.push(async () => {
+            profilesMap = {}; verifs = []; myApps = [];
+            K.watch('m9_profiles', ['m5_reviewer_profiles'], list => { profilesMap = {}; list.forEach(p => { profilesMap[p.id] = p; }); redraw(); });
+            K.watch('m9_verifs', ['m5_verifications'], list => { verifs = list; redraw(); });
+            try {
+              const f = await FSM();
+              K.listen(f.onSnapshot(f.query(K.col('m5_reviewer_applications'), f.where('uid', '==', myUid())), snap => { myApps = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); redraw(); }, err => console.warn('[M9] applications:', err.message)));
+            } catch (e) { console.warn('[M9]', e); }
+          });
+          K.roleHooks.push(() => {
+            if (K.admin() && !K.started.m9Admin) { K.started.m9Admin = 1; K.watch('m9_apps', ['m5_reviewer_applications'], redraw); K.watch('m9_reports', ['m5_reports'], redraw); }
+            if (!K.admin() && ui.tab !== 'apply' && ui.tab !== 'queue') ui.tab = 'apply';
+          });
+          K.addTile({ id: 'reviewer', icon: 'fa-shield-check', color: 'emerald', title: 'Người bảo chứng', desc: () => K.admin() && pendingApps() ? pendingApps() + ' đơn chờ duyệt' : 'Bảo chứng tài liệu, gắn nhãn Verified, nhận KD', badge: () => (K.admin() ? pendingApps() : 0) + queueDocs().length, onClick: openM9 });
+          K.roleHooks.push(() => { if (!K.admin() && !mySubjects().length && ui.tab !== 'apply') ui.tab = 'apply'; });
+        });
+
         // ╔══════════════════════════════════════════════════════════════════╗
         // ║  UEHNEST · BỔ SUNG TÍNH NĂNG (KDX)  — KẾT THÚC                   ║
         // ╚══════════════════════════════════════════════════════════════════╝
