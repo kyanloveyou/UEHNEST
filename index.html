@@ -31,8 +31,9 @@
     <link rel="icon" type="image/png" href="https://i.postimg.cc/9fgDpdF5/1776075834980-2202291857259398329-8487023581297031406-02250df9bc64ad0e40f1a5e07ce16c19.jpg">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="vendor/purify.min.js"></script>
     
     <style>
         @keyframes float {
@@ -61,7 +62,7 @@
         .morph-corner { bottom: 1rem; left: 1rem; transform: translate(0, 0) scale(1); z-index: 90; }
     </style>
 
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>
         window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
@@ -377,14 +378,16 @@
                 </div>
                 <div class="bg-violet-900/20 border border-violet-500/30 p-4 rounded-xl text-sm text-slate-300">
                     <i class="fa-solid fa-circle-info text-violet-400 mr-2"></i>
-                    <b>Hướng dẫn lấy mã (Miễn phí 100%):</b>
+                    <b>Hướng dẫn lấy mã (hạn mức và phí tùy Google):</b>
                     <ol class="list-decimal ml-5 mt-2 space-y-1 text-slate-400">
-                        <li>Vào <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 hover:underline">Google AI Studio</a> (Đăng nhập Gmail).</li>
+                        <li>Vào <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">Google AI Studio</a> (Đăng nhập Gmail).</li>
                         <li>Bấm nút <b>Create API Key</b>.</li>
                         <li>Copy chuỗi mã đó và dán vào ô bên trên.</li>
-                        <li>Mã của bạn được mã hóa và lưu an toàn trên máy chủ.</li>
+                        <li><b>Thông tin bảo mật:</b> Key của bạn <b>KHÔNG</b> được gửi hay lưu trên máy chủ UEHNEST. Mặc định Key chỉ lưu tạm trong phiên trình duyệt (xóa khi đăng xuất hoặc kết thúc phiên; một số trình duyệt có thể khôi phục phiên), hoặc được mã hóa cục bộ (AES-GCM) trên thiết bị này nếu bạn đặt mật khẩu mã hóa ở ô trên.</li>
                     </ol>
                 </div>
+                <label class="block text-sm text-slate-300">Mật khẩu mã hóa trên thiết bị này (tùy chọn):<input type="password" id="user-gemini-passphrase" autocomplete="new-password" class="w-full bg-slate-900 p-3 rounded-xl border border-slate-600" placeholder="Bỏ trống để chỉ lưu trong phiên"></label>
+                <button type="button" onclick="window.clearAIConfig()" class="w-full py-2 text-slate-300">Xóa API Key trên thiết bị này</button>
                 <button onclick="window.saveAIConfig()" class="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)]">
                     <i class="fa-solid fa-floppy-disk mr-2"></i> Gắn Chìa Khóa
                 </button>
@@ -676,15 +679,8 @@
             </div>
             <div class="bg-slate-900/50 p-6 rounded-2xl border border-rose-500/30 shadow-[0_0_20px_rgba(225,29,72,0.15)] relative overflow-hidden group text-left">
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-rose-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-                <h3 class="text-2xl font-bold text-rose-400 mb-2 relative z-10"><i class="fa-solid fa-user-secret mr-2"></i> Két Sắt Khôi Phục</h3>
-                <p class="text-slate-400 text-sm mb-4 relative z-10">Tra cứu mật khẩu thô của học sinh.</p>
-                <div class="space-y-3 relative z-10">
-                    <div class="flex gap-3">
-                        <input type="text" id="lookup-username" placeholder="Nhập ID học sinh cần tra..." class="flex-1 bg-slate-800 text-white p-2.5 rounded-lg border border-slate-600 focus:outline-none text-sm">
-                        <button onclick="window.lookupPassword()" class="px-6 py-2.5 bg-slate-700 text-white font-bold rounded-lg"><i class="fa-solid fa-magnifying-glass"></i></button>
-                    </div>
-                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-700 min-h-[60px] flex items-center"><span id="lookup-result" class="text-slate-400 text-sm italic">Kết quả mật khẩu...</span></div>
-                </div>
+                <h3 class="text-2xl font-bold text-rose-400 mb-2 relative z-10"><i class="fa-solid fa-shield-halved mr-2"></i> An Toàn Tài Khoản</h3>
+                <p class="text-slate-400 text-sm mb-4 relative z-10">Hệ thống đã ngừng lưu mật khẩu thô để bảo vệ quyền riêng tư của sinh viên. Nếu sinh viên quên mật khẩu, vui lòng hướng dẫn dùng tính năng <b>Đăng nhập bằng Email UEH (@st.ueh.edu.vn)</b> hoặc đặt lại qua Firebase Authentication Console.</p>
             </div>
         </div>
 
@@ -1023,7 +1019,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, query, orderBy, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteField, collection, onSnapshot, deleteDoc, query, orderBy, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
         // CÁC HÀM TIỆN ÍCH QUAN TRỌNG VÀ ĐIỀU HƯỚNG
@@ -1153,15 +1149,24 @@ function triggerWelcomeAnimation(fullname, isNewUser = false) {
 
         if(auth) {
             onAuthStateChanged(auth, async (u) => {
+                if (!u || (currentUser && currentUser.uid !== u.uid)) clearAISession();
                 currentUser = u;
+                window.userApiKey = u ? readAIStorage('sessionStorage', 'gemini_key') : '';
                 if(currentUser) {
                     setTimeout(async () => {
+                        if (currentUser?.uid !== u.uid) return;
                         let fullNameToDisplay = "Người dùng", isNew = false, currentUsername = "";
                         try {
                 const snap = await getDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'info'));
                 
                 if(snap.exists()) {
                     userProfile = snap.data();
+                    if ('geminiApiKey' in userProfile) {
+                        // Never reuse a previously exposed key. Remove only this legacy field.
+                        delete userProfile.geminiApiKey;
+                        try { await updateDoc(snap.ref, { geminiApiKey: deleteField() }); }
+                        catch { console.warn('Chưa xóa được API key cũ; cần quản trị viên dọn dữ liệu.'); }
+                    }
                     document.getElementById('username').value = userProfile.username || "";
                     currentUsername = (userProfile.username || "").toString().trim();
                     fullNameToDisplay = userProfile.fullname || currentUsername || "Người dùng";
@@ -1177,12 +1182,14 @@ function triggerWelcomeAnimation(fullname, isNewUser = false) {
                 window.userKdCoins = userProfile.kdCoins || 0;
                 document.querySelectorAll('.kd-coin-display').forEach(el => el.innerText = window.userKdCoins);
 
-                const safeUsername = currentUsername.toLowerCase();
-                
-                            // Cấp quyền Chúa tể (Main Admin) nếu đúng ID
-                            if (safeUsername === MAIN_ADMIN.toLowerCase()) {
-                                isMainAdmin = true;
-                            }
+                // [SECURITY FIX] Xác định ID theo email đăng nhập thực tế (chống sửa userProfile.username để mạo danh)
+                const authEmailPrefix = currentUser.email ? currentUser.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+                const safeUsername = authEmailPrefix;
+                const tokenRes = await currentUser.getIdTokenResult().catch(() => ({ claims: {} }));
+                isMainAdmin = false;
+                if (tokenRes.claims?.admin === true || tokenRes.claims?.role === 'main_admin' || currentUser.email === `${MAIN_ADMIN.toLowerCase()}@khaidayyhub.com`) {
+                    isMainAdmin = true;
+                }
 
                             if (isMainAdmin) {
                                 userRole = 'main_admin'; isAdmin = true; window.isInitialRoleCheckDone = true; 
@@ -1303,24 +1310,25 @@ function triggerWelcomeAnimation(fullname, isNewUser = false) {
             let index = 0;
             Object.keys(questionDatabase).forEach(subjectName => {
                 const data = questionDatabase[subjectName];
-                const imgUrl = data.image || "https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?auto=format&fit=crop&w=200&q=80"; 
+                const rawImg = String(data.image || '').trim();
+                const imgUrl = /^https?:\/\/[^\s"'<>]+$/i.test(rawImg) ? rawImg : "https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?auto=format&fit=crop&w=200&q=80";
                 const chaptersCount = data.chapters ? data.chapters.length : 0;
                 const option = document.createElement('option'); option.value = subjectName; option.text = subjectName; select.appendChild(option);
                 const card = document.createElement('div');
                 card.className = `bg-gradient-to-br ${colors[index % colors.length]} rounded-2xl p-6 shadow-xl border border-white/10 hover:-translate-y-2 transition-all duration-300 group flex flex-col relative overflow-hidden`;
-                const safeName = subjectName.replace(/'/g, "\\'"), safeImgUrl = imgUrl.replace(/'/g, "\\'");
+                const safeName = kdEscapeHTML(JSON.stringify(subjectName)), safeImgUrl = kdEscapeHTML(JSON.stringify(imgUrl));
                 
                 let adminMenuHTML = '';
                 if (['mod', 'admin', 'main_admin'].includes(userRole)) {
                     let deleteBtnHTML = '';
                     if (['admin', 'main_admin'].includes(userRole)) {
-                        deleteBtnHTML = `<button onclick="window.openDeleteSubjectModal('${safeName}', event)" class="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/20 transition-colors border-t border-slate-700 font-medium"><i class="fa-solid fa-trash-can mr-2"></i> Xóa mục to</button>`;
+                        deleteBtnHTML = `<button onclick="window.openDeleteSubjectModal(${safeName}, event)" class="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/20 transition-colors border-t border-slate-700 font-medium"><i class="fa-solid fa-trash-can mr-2"></i> Xóa mục to</button>`;
                     }
                     adminMenuHTML = `
                         <div class="absolute top-4 right-4 z-20">
                             <button onclick="window.toggleSubjectMenu('menu-${index}', event)" class="text-slate-300 hover:text-white w-8 h-8 flex items-center justify-center bg-slate-900/50 rounded-full backdrop-blur-md transition-colors focus:outline-none"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                             <div id="menu-${index}" class="hidden absolute right-0 mt-2 w-40 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl overflow-hidden text-sm origin-top-right">
-                                <button onclick="window.openEditSubjectModal('${safeName}', '${safeImgUrl}', event)" class="w-full text-left px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"><i class="fa-solid fa-pen mr-2"></i> Chỉnh sửa</button>
+                                <button onclick="window.openEditSubjectModal(${safeName}, ${safeImgUrl}, event)" class="w-full text-left px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"><i class="fa-solid fa-pen mr-2"></i> Chỉnh sửa</button>
                                 ${deleteBtnHTML}
                             </div>
                         </div>`;
@@ -1329,10 +1337,10 @@ function triggerWelcomeAnimation(fullname, isNewUser = false) {
                 card.innerHTML = `
                     <div class="absolute top-0 left-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-br-lg z-10 shadow-md">LIVE</div>
                     ${adminMenuHTML}
-                    <div class="relative w-24 h-24 mx-auto mb-4 mt-2"><img src="${imgUrl}" class="w-full h-full object-cover rounded-full shadow-lg border-4 border-white/20 group-hover:scale-110 transition-transform duration-300"></div>
-                    <h3 class="text-lg font-bold text-white mb-2">${subjectName}</h3>
+                    <div class="relative w-24 h-24 mx-auto mb-4 mt-2"><img src="${kdEscapeHTML(imgUrl)}" class="w-full h-full object-cover rounded-full shadow-lg border-4 border-white/20 group-hover:scale-110 transition-transform duration-300"></div>
+                    <h3 class="text-lg font-bold text-white mb-2">${kdEscapeHTML(subjectName)}</h3>
                     <p class="text-white/70 text-sm mb-6 flex-grow">Đã thu thập: ${chaptersCount} chương.</p>
-                    <button onclick="window.openModule('${safeName}')" class="w-full py-2.5 bg-white/20 hover:bg-white/40 hover:text-slate-900 text-white rounded-xl backdrop-blur-sm transition-colors font-bold shadow-lg"><i class="fa-solid fa-play mr-2"></i> Vượt Ải</button>
+                    <button onclick="window.openModule(${safeName})" class="w-full py-2.5 bg-white/20 hover:bg-white/40 hover:text-slate-900 text-white rounded-xl backdrop-blur-sm transition-colors font-bold shadow-lg"><i class="fa-solid fa-play mr-2"></i> Vượt Ải</button>
                 `;
                 grid.appendChild(card); index++;
             });
@@ -1422,15 +1430,8 @@ function triggerWelcomeAnimation(fullname, isNewUser = false) {
                 document.getElementById('loading-overlay').classList.add('hidden'); document.getElementById('temp-admin-username').value = ''; alert(`Thành công cấp quyền cho ${targetUser}!`);
             } catch(e) { document.getElementById('loading-overlay').classList.add('hidden'); alert("Lỗi: " + e.message); }
         }
-        window.lookupPassword = async function() {
-            const targetUser = document.getElementById('lookup-username').value.trim().toLowerCase();
-            if(!targetUser || !isMainAdmin || !db) return;
-            const resEl = document.getElementById('lookup-result'); resEl.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Đang bẻ khóa...`;
-            try {
-                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'secrets_vault_admin_only', targetUser));
-                if(snap.exists() && snap.data().password) resEl.innerHTML = `<span class="text-emerald-400">Pass của <b>${targetUser}</b>: <b class="text-white bg-slate-800 px-2 py-1 rounded ml-2 select-all">${snap.data().password}</b></span>`;
-                else resEl.innerHTML = `<span class="text-amber-400">Chưa bắt được pass (User cần login lại)</span>`;
-            } catch(e) { resEl.innerHTML = `<span class="text-red-400">Lỗi: ${e.message}</span>`; }
+        window.lookupPassword = function() {
+            alert("Tính năng tra cứu mật khẩu thô đã bị gỡ bỏ vĩnh viễn vì lý do bảo mật.");
         }
         window.toggleAdminTool = function() {
             const el = document.getElementById('admin-tool-section'); el.classList.toggle('hidden'); if(!el.classList.contains('hidden')) el.scrollIntoView({ behavior: 'smooth' });
@@ -1625,7 +1626,7 @@ window.reverseSelectedSubjectChapters = async function() {
             if(userCredential.user) {
                 await setDoc(doc(db, 'artifacts', appId, 'users', userCredential.user.uid, 'profile', 'info'), { username: usernameVal, fullname: fullnameVal || usernameVal }, { merge: true });
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'registeredUsers', cleanUsername), { exists: true, username: usernameVal }, { merge: true });
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'secrets_vault_admin_only', cleanUsername), { password: passVal }, { merge: true });
+
             }
         }
     } catch(error) {
@@ -1645,6 +1646,8 @@ window.reverseSelectedSubjectChapters = async function() {
         window.closeLogoutModal = function() { document.getElementById('logout-confirm-modal').classList.add('hidden'); }
         window.executeLogout = async function() {
             window.closeLogoutModal();
+            clearAISession();
+            window.closeAIConfigModal();
             if(unsubscribeScores) unsubscribeScores(); if(unsubscribeQuestions) unsubscribeQuestions(); if(unsubscribeRole) unsubscribeRole();
             if(auth) await signOut(auth); 
             userRole = 'user'; isAdmin = false; isMainAdmin = false; window.isInitialRoleCheckDone = false; stopAdminTimer(); window.closeBigQR(); 
@@ -1666,7 +1669,8 @@ window.reverseSelectedSubjectChapters = async function() {
                 btn.className = "p-5 bg-slate-800/80 hover:bg-emerald-500/20 border-2 border-slate-600 hover:border-emerald-400 rounded-xl transition-all duration-300 flex flex-col group relative overflow-hidden text-left cursor-pointer";
                 const cloudScore = userScoresDB[`${subjectName}_${index}`];
                 let scoreBadge = cloudScore ? `<div class="mt-4 text-sm font-medium px-3 py-1.5 rounded-lg inline-flex items-center border ${cloudScore.score === cloudScore.total ? "text-emerald-400 bg-emerald-900/40 border-emerald-500/50" : "text-amber-400 bg-amber-900/40 border-amber-500/50"}"><i class="fa-solid fa-cloud-arrow-down mr-2"></i> Kỷ lục: ${cloudScore.score}/${cloudScore.total}</div>` : '';
-                let deleteChapterHTML = ['admin', 'main_admin'].includes(userRole) ? `<button onclick="window.openDeleteChapterModal(${index}, '${chapter.name.replace(/'/g, "\\'")}', event)" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all z-20 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash-can"></i></button>` : '';
+                const safeChapName = kdEscapeHTML(JSON.stringify(chapter.name));
+                let deleteChapterHTML = ['admin', 'main_admin'].includes(userRole) ? `<button onclick="window.openDeleteChapterModal(${index}, ${safeChapName}, event)" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all z-20 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash-can"></i></button>` : '';
 
                 btn.innerHTML = `
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
@@ -1675,7 +1679,7 @@ window.reverseSelectedSubjectChapters = async function() {
                         <span class="text-emerald-400 font-black text-lg group-hover:text-emerald-300 tracking-wider">LEVEL ${index + 1}</span>
                         <div class="bg-slate-700 text-xs px-2 py-1 rounded-md text-slate-300"><i class="fa-solid fa-layer-group mr-1"></i> ${chapter.questions.length} câu</div>
                     </div>
-                    <span class="text-white font-semibold text-sm leading-relaxed relative z-10">${chapter.name}</span>
+                    <span class="text-white font-semibold text-sm leading-relaxed relative z-10">${kdEscapeHTML(chapter.name)}</span>
                     ${scoreBadge}
                 `;
                 btn.onclick = () => window.startQuiz(index); container.appendChild(btn);
@@ -1834,7 +1838,7 @@ window.reverseSelectedSubjectChapters = async function() {
             document.getElementById('current-q-num').innerText = displayLabel; document.getElementById('progress-bar').style.width = ((currentQuestionIndex) / currentQuestions.length) * 100 + '%';
             let displayQuestion = String(q.question || '').replace(/^Câu\s+\d+\s*[:.-]\s*/i, '');
             const essayBadge = (q.type === 'fill-in' && q.examDisplayLabel) ? `<span class="inline-flex items-center mb-4 px-4 py-2 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/40 text-fuchsia-300 text-base font-black"><i class="fa-solid fa-pen-nib mr-2"></i> Tự luận câu ${kdEscapeHTML(q.examDisplayLabel)}</span>` : '';
-            document.getElementById('question-text').innerHTML = q.customHighlightedQuestion || (essayBadge + renderRichQuestionHTML(displayQuestion));
+            document.getElementById('question-text').innerHTML = q.customHighlightedQuestion ? window.kdSanitizeHTML(q.customHighlightedQuestion) : (essayBadge + renderRichQuestionHTML(displayQuestion));
             const optionsContainer = document.getElementById('options-container'); optionsContainer.innerHTML = ''; 
 
             if (q.type === 'fill-in') {
@@ -1867,7 +1871,7 @@ window.reverseSelectedSubjectChapters = async function() {
                     if (window.quizMode === 'exam' && window.userAnswers[currentQuestionIndex] === index) { baseBtnClass += "border-cyan-400 bg-cyan-500/20 text-white shadow-[0_0_15px_rgba(34,211,238,0.2)] ring-1 ring-cyan-400"; } 
                     else baseBtnClass += "border-slate-600 bg-slate-800/50 hover:bg-slate-700 hover:border-cyan-400 text-slate-200";
                     btn.className = baseBtnClass; 
-                    btn.innerHTML = (q.customHighlightedOptions && q.customHighlightedOptions[index]) ? q.customHighlightedOptions[index] : `${labels[index]}. ${optObj.text}`; 
+                    btn.innerHTML = (q.customHighlightedOptions && q.customHighlightedOptions[index]) ? window.kdSanitizeHTML(q.customHighlightedOptions[index]) : `${labels[index]}. ${kdEscapeHTML(optObj.text)}`;
                     btn.onclick = () => selectOption(index, btn);
                     optionsContainer.appendChild(btn);
                 });
@@ -1883,13 +1887,13 @@ window.reverseSelectedSubjectChapters = async function() {
                 fbContent.className = "bg-slate-800 border-2 border-emerald-500/50 rounded-2xl p-8 max-w-lg w-full shadow-[0_0_40px_rgba(16,185,129,0.3)] relative mx-4 transform scale-100 transition-transform duration-300 flex flex-col";
                 fbIconContainer.className = "w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(16,185,129,0.5)] bg-emerald-500/20 shrink-0";
                 fbIcon.className = "fa-solid fa-check text-4xl text-emerald-400"; fbTitle.className = "text-3xl font-black text-center mb-4 text-emerald-400"; fbTitle.innerText = "Chính xác!";
-                fbBody.innerHTML = `<div class="bg-slate-900/50 p-4 rounded-xl border border-emerald-500/20 text-slate-200">${rationaleText}</div>`;
+                fbBody.innerHTML = `<div class="bg-slate-900/50 p-4 rounded-xl border border-emerald-500/20 text-slate-200">${window.kdSanitizeHTML(rationaleText)}</div>`;
             } else {
                 fbContent.className = "bg-slate-800 border-2 border-red-500/50 rounded-2xl p-8 max-w-lg w-full shadow-[0_0_40px_rgba(239,68,68,0.3)] relative mx-4 transform scale-100 transition-transform duration-300 flex flex-col";
                 fbIconContainer.className = "w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(239,68,68,0.5)] bg-red-500/20 shrink-0";
                 fbIcon.className = "fa-solid fa-xmark text-4xl text-red-500"; fbTitle.className = "text-3xl font-black text-center mb-4 text-red-500"; fbTitle.innerText = "Sai mất rồi!";
-                let extraHtml = explanation ? `<div class="bg-emerald-900/20 p-4 rounded-xl border border-emerald-500/30"><span class="text-emerald-100"><b class="text-emerald-400">Giải thích đáp án đúng:</b><br/> ${explanation}</span></div>` : '';
-                fbBody.innerHTML = `<div class="bg-red-900/20 p-4 rounded-xl border border-red-500/30 mb-3"><span class="text-slate-200"><b class="text-red-400">Phân tích:</b><br/> ${rationaleText}</span></div>${extraHtml}`;
+                let extraHtml = explanation ? `<div class="bg-emerald-900/20 p-4 rounded-xl border border-emerald-500/30"><span class="text-emerald-100"><b class="text-emerald-400">Giải thích đáp án đúng:</b><br/> ${window.kdSanitizeHTML(explanation)}</span></div>` : '';
+                fbBody.innerHTML = `<div class="bg-red-900/20 p-4 rounded-xl border border-red-500/30 mb-3"><span class="text-slate-200"><b class="text-red-400">Phân tích:</b><br/> ${window.kdSanitizeHTML(rationaleText)}</span></div>${extraHtml}`;
             }
             fbModal.classList.remove('hidden'); window.toggleVisibility([], currentQuestionIndex < currentQuestions.length - 1 ? ['next-btn'] : ['finish-btn']);
             if (window.MathJax) { setTimeout(() => { MathJax.typesetClear(); MathJax.typesetPromise(); }, 50); }
@@ -1921,7 +1925,7 @@ window.reverseSelectedSubjectChapters = async function() {
                 const origChars = ['A', 'B', 'C', 'D'], charMap = {};
                 currentShuffledOptions.forEach((opt, newIdx) => { charMap[origChars[opt.originalIndex]] = origChars[newIdx]; });
                 const swapLabels = (text) => text ? text.replace(/(^|[^\p{L}])([A-D])(?=[^\p{L}]|$)/gu, (m, p1, p2) => p1 + charMap[p2]) : "";
-                const rationaleText = swapLabels(selectedOpt.rationale).replace(/\n/g, '<br/>'), correctOpt = currentShuffledOptions.find(o => o.isCorrect), explanation = swapLabels(correctOpt.rationale).replace(/\n/g, '<br/>');
+                const rationaleText = kdEscapeHTML(swapLabels(selectedOpt.rationale)).replace(/\n/g, '<br/>'), correctOpt = currentShuffledOptions.find(o => o.isCorrect), explanation = kdEscapeHTML(swapLabels(correctOpt.rationale)).replace(/\n/g, '<br/>');
 
                 if(isCorrect) { score++; removeMistakeIfCorrect(q); } 
                 else {
@@ -1941,10 +1945,10 @@ window.reverseSelectedSubjectChapters = async function() {
 
             inputEl.disabled = true;
             if(isCorrect) {
-                score++; inputEl.classList.replace('border-slate-600', 'border-emerald-500'); inputEl.classList.add('text-emerald-400', 'bg-emerald-900/20'); removeMistakeIfCorrect(q); showFeedbackModal(true, q.rationale.replace(/\n/g, '<br/>'));
+                score++; inputEl.classList.replace('border-slate-600', 'border-emerald-500'); inputEl.classList.add('text-emerald-400', 'bg-emerald-900/20'); removeMistakeIfCorrect(q); showFeedbackModal(true, kdEscapeHTML(q.rationale).replace(/\n/g, '<br/>'));
             } else {
                 inputEl.classList.replace('border-slate-600', 'border-red-500'); inputEl.classList.add('text-red-400', 'bg-red-900/20');
-                const rationaleText = `Bạn điền: <b>${userAns || "(Bỏ trống)"}</b>`, explanation = `Đáp án đúng: <b>${q.exactAnswer}</b><br/><br/>Giải thích chi tiết:<br/>${q.rationale.replace(/\n/g, '<br/>')}`;
+                const rationaleText = `Bạn điền: <b>${kdEscapeHTML(userAns || "(Bỏ trống)")}</b>`, explanation = `Đáp án đúng: <b>${kdEscapeHTML(q.exactAnswer)}</b><br/><br/>Giải thích chi tiết:<br/>${kdEscapeHTML(q.rationale).replace(/\n/g, '<br/>')}`;
                 recordMistake(q, rationaleText, `Đáp án đúng: ${q.exactAnswer}`, explanation); showFeedbackModal(false, rationaleText, explanation);
             }
         }
@@ -2051,11 +2055,11 @@ window.reverseSelectedSubjectChapters = async function() {
                     const html = `
                         <div class="bg-slate-900/50 border border-slate-700 rounded-xl p-5 relative">
                             <div class="absolute top-0 left-0 bg-rose-500 text-white text-xs font-bold px-3 py-1 rounded-br-lg rounded-tl-xl shadow-md">Lỗi #${index + 1}</div>
-                            <h4 class="text-white font-semibold text-lg mt-3 mb-4">${item.question.replace(/^Câu\s+\d+\s*[:.-]\s*/i, '')}</h4>
+                            <div class="text-white font-semibold text-lg mt-3 mb-4">${window.kdSanitizeHTML(renderRichQuestionHTML(item.question.replace(/^Câu\s+\d+\s*[:.-]\s*/i, '')))}</div>
                             <div class="space-y-3 text-sm">
-                                <div class="bg-rose-900/20 border border-rose-500/30 p-3 rounded-lg text-slate-300"><i class="fa-solid fa-xmark text-rose-500 mr-2"></i> ${item.userAnswer}</div>
-                                <div class="bg-emerald-900/20 border border-emerald-500/30 p-3 rounded-lg text-slate-300"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> ${item.correctAnswer}</div>
-                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-600 text-slate-400"><b class="text-cyan-400"><i class="fa-solid fa-circle-info mr-2"></i> Giải thích:</b><br/> ${item.explanation}</div>
+                                <div class="bg-rose-900/20 border border-rose-500/30 p-3 rounded-lg text-slate-300"><i class="fa-solid fa-xmark text-rose-500 mr-2"></i> ${window.kdSanitizeHTML(item.userAnswer)}</div>
+                                <div class="bg-emerald-900/20 border border-emerald-500/30 p-3 rounded-lg text-slate-300"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> ${kdEscapeHTML(item.correctAnswer)}</div>
+                                <div class="bg-slate-800 p-3 rounded-lg border border-slate-600 text-slate-400"><b class="text-cyan-400"><i class="fa-solid fa-circle-info mr-2"></i> Giải thích:</b><br/> ${window.kdSanitizeHTML(item.explanation)}</div>
                             </div>
                         </div>`;
                     listEl.insertAdjacentHTML('beforeend', html);
@@ -2095,7 +2099,7 @@ window.reverseSelectedSubjectChapters = async function() {
                 listContainer.innerHTML += `
                     <div class="flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-600 mb-3 hover:border-cyan-400 transition-colors">
                         <div class="flex-1 pr-4">
-                            <p class="text-slate-300 text-sm mb-1"><span class="text-cyan-400 font-bold">Câu ${idx + 1}:</span> ${shortQ}</p>
+                            <p class="text-slate-300 text-sm mb-1"><span class="text-cyan-400 font-bold">Câu ${idx + 1}:</span> ${kdEscapeHTML(shortQ)}</p>
                             <span class="text-[10px] px-2 py-1 rounded font-bold uppercase ${q.type === 'fill-in' ? 'bg-fuchsia-900/50 text-fuchsia-400 border border-fuchsia-500/50' : 'bg-emerald-900/50 text-emerald-400 border border-emerald-500/50'}">${q.type === 'fill-in' ? 'Điền khuyết' : 'Trắc nghiệm'}</span>
                         </div>
                         <button onclick="window.openEditSingleQuestion('${safeSub}', ${chapIdx}, ${idx})" class="w-10 h-10 shrink-0 bg-blue-500/20 border border-blue-500/50 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg transition-all flex items-center justify-center"><i class="fa-solid fa-pen"></i></button>
@@ -2233,30 +2237,169 @@ window.reverseSelectedSubjectChapters = async function() {
         // =========================================================
         // TÍNH NĂNG BYOK - CẤU HÌNH API VÀ GỌI AI
         // =========================================================
-        window.openAIConfigModal = function() {
-            document.getElementById('user-gemini-api-key').value = window.userApiKey || "";
-            document.getElementById('ai-config-modal').classList.remove('hidden');
+        // Điền URL Cloudflare Worker Proxy (H1) nếu triển khai (để chuỗi rỗng "" nếu chỉ dùng BYOK H3)
+        window.UEHNEST_AI_PROXY_URL = window.UEHNEST_AI_PROXY_URL || "";
+
+        // Hàm lọc sạch HTML bằng DOMPurify cho mọi dữ liệu từ AI hoặc người dùng
+        window.kdSanitizeHTML = function(dirtyHTML) {
+            if (window.DOMPurify) {
+                return window.DOMPurify.sanitize(String(dirtyHTML ?? ''), {
+                    ALLOWED_TAGS: ['b', 'i', 'u', 'em', 'strong', 'ul', 'ol', 'li', 'h3', 'h4', 'br', 'p', 'div', 'span', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'mark'],
+                    ALLOWED_ATTR: ['class', 'title']
+                });
+            }
+            return kdEscapeHTML(dirtyHTML).replace(/\n/g, '<br/>');
+        };
+
+        function aiStorageKey(kind) { return 'uehnest_' + kind + '_' + appId + '_' + (currentUser?.uid || ''); }
+        function readAIStorage(storage, kind) { try { return window[storage].getItem(aiStorageKey(kind)) || ''; } catch { return ''; } }
+        function clearAISession() {
+            window.userApiKey = '';
+            try { sessionStorage.removeItem(aiStorageKey('gemini_key')); } catch {}
+            document.getElementById('user-gemini-api-key').value = '';
+            document.getElementById('user-gemini-passphrase').value = '';
+            cachedAIMistakesCount = -1; cachedAIResponse = '';
         }
+
+        // Mã hóa cục bộ bằng WebCrypto AES-GCM + PBKDF2 (600.000 vòng) khi người dùng đặt mật khẩu nhớ Key
+        async function deriveAesKey(passphrase, saltBytes) {
+            const enc = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+            return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: saltBytes, iterations: 600000, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        async function encryptApiKeyToLocal(rawKey, passphrase) {
+            const storageKey = aiStorageKey('enc_gemini_key');
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const aesKey = await deriveAesKey(passphrase, salt);
+            const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, new TextEncoder().encode(rawKey));
+            const toB64 = u8 => btoa(String.fromCharCode(...u8));
+            localStorage.setItem(storageKey, JSON.stringify({
+                s: toB64(salt), iv: toB64(iv), c: toB64(new Uint8Array(cipherBuf))
+            }));
+        }
+
+        async function decryptApiKeyFromLocal(passphrase) {
+            const raw = readAIStorage('localStorage', 'enc_gemini_key');
+            if (!raw) return null;
+            const { s, iv, c } = JSON.parse(raw);
+            const fromB64 = str => Uint8Array.from(atob(str), ch => ch.charCodeAt(0));
+            const aesKey = await deriveAesKey(passphrase, fromB64(s));
+            const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(iv) }, aesKey, fromB64(c));
+            return new TextDecoder().decode(plainBuf);
+        }
+
+        window.ensureUserApiKey = async function() {
+            if (!currentUser) return "";
+            const keyOwnerUid = currentUser.uid;
+            if (window.userApiKey) return window.userApiKey;
+            const fromSession = readAIStorage('sessionStorage', 'gemini_key');
+            if (fromSession) { window.userApiKey = fromSession; return fromSession; }
+            if (readAIStorage('localStorage', 'enc_gemini_key')) {
+                const pass = prompt("Nhập mật khẩu mã hóa bạn đã đặt để mở khóa Gemini API Key trên trình duyệt này:");
+                if (pass) {
+                    try {
+                        const dec = await decryptApiKeyFromLocal(pass);
+                        if (currentUser?.uid !== keyOwnerUid) return "";
+                        if (dec) {
+                            window.userApiKey = dec;
+                            try { sessionStorage.setItem(aiStorageKey('gemini_key'), dec); } catch {}
+                            return dec;
+                        }
+                    } catch (e) {
+                        alert("Mật khẩu giải mã không đúng!");
+                    }
+                }
+            }
+            return "";
+        };
+
+        window.openAIConfigModal = function() {
+            document.getElementById('user-gemini-api-key').value = window.userApiKey || readAIStorage('sessionStorage', 'gemini_key') || "";
+            const passEl = document.getElementById('user-gemini-passphrase');
+            if (passEl) passEl.value = "";
+            document.getElementById('ai-config-modal').classList.remove('hidden');
+        };
 
         window.closeAIConfigModal = function() {
             document.getElementById('ai-config-modal').classList.add('hidden');
-        }
+            document.getElementById('user-gemini-api-key').value = '';
+            document.getElementById('user-gemini-passphrase').value = '';
+        };
 
         window.saveAIConfig = async function() {
+            if (!currentUser) return;
+            const uid = currentUser.uid;
             const key = document.getElementById('user-gemini-api-key').value.trim();
-            if (!currentUser || !db) return;
-            document.getElementById('loading-overlay').classList.remove('hidden');
+            const passphrase = document.getElementById('user-gemini-passphrase').value;
+            if (!/^AIza[\w-]+$/.test(key)) return alert('API Key không đúng định dạng.');
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'info'), { geminiApiKey: key }, { merge: true });
+                if (passphrase) await encryptApiKeyToLocal(key, passphrase);
+                else localStorage.removeItem(aiStorageKey('enc_gemini_key'));
+                if (currentUser?.uid !== uid) return;
+                sessionStorage.setItem(aiStorageKey('gemini_key'), key);
                 window.userApiKey = key;
                 window.closeAIConfigModal();
-                document.getElementById('loading-overlay').classList.add('hidden');
-                alert("Đã lưu chìa khóa API thành công! Hãy vào lại Phòng Hồi Sức để dùng Gia Sư AI nhé.");
-            } catch(e) {
-                document.getElementById('loading-overlay').classList.add('hidden');
-                alert("Lỗi khi lưu API Key: " + e.message);
+                alert('Đã lưu API Key trên trình duyệt cho tài khoản này.');
+            } catch {
+                alert('Không lưu được API Key. Hãy kiểm tra quyền lưu trữ của trình duyệt và thử lại.');
             }
-        }
+        };
+        window.clearAIConfig = function() {
+            clearAISession();
+            try { localStorage.removeItem(aiStorageKey('enc_gemini_key')); }
+            catch { return alert('Không xóa được dữ liệu cục bộ. Hãy xóa trong cài đặt trình duyệt.'); }
+            alert('Đã xóa API Key của tài khoản này trên trình duyệt.');
+        };
+
+        // Gọi Gemini an toàn: Truyền key qua Header x-goog-api-key (tuyệt đối không nối ?key= vào URL) hoặc qua Proxy H1
+        window.callGeminiGenerate = async function(promptText, modelName = 'gemini-2.5-flash') {
+            const activeKey = await window.ensureUserApiKey();
+            if (activeKey) {
+                const cleanApiKey = activeKey.replace(/[^a-zA-Z0-9_-]/g, '');
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': cleanApiKey
+                    },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                });
+                if (!response.ok) {
+                    if (response.status === 429) throw new Error("Google báo quá tải do bạn gọi liên tục. Hãy đợi 1 phút rồi bấm lại nhé!");
+                    if (response.status === 400 || response.status === 403) throw new Error("API Key của bạn không hợp lệ, hết hạn hoặc đã bị khóa.");
+                    throw new Error("Lỗi kết nối máy chủ Gemini (Mã lỗi: " + response.status + ").");
+                }
+                const data = await response.json();
+                return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            }
+            if (window.UEHNEST_AI_PROXY_URL && currentUser) {
+                const idToken = await currentUser.getIdToken();
+                const response = await fetch(window.UEHNEST_AI_PROXY_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({ prompt: promptText, model: modelName })
+                });
+                if (!response.ok) {
+                    const errObj = await response.json().catch(() => ({}));
+                    throw new Error(errObj.error || "Máy chủ AI chung đang bận, bạn hãy gắn API Key cá nhân để dùng riêng nhé!");
+                }
+                const data = await response.json();
+                return data.text || data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            }
+            throw new Error("Bạn chưa cấu hình Gemini API Key. Vui lòng bấm nút Cấu Hình AI để gắn chìa khóa nhé!");
+        };
 
         // Biến lưu trữ đệm (Cache) để khỏi gọi API nhiều lần
         let isFetchingAI = false;
@@ -2267,7 +2410,13 @@ window.reverseSelectedSubjectChapters = async function() {
             // Khóa nút bấm nếu đang gọi API để chống spam
             if (isFetchingAI) return;
 
-            if (!window.userApiKey || window.userApiKey === "") { window.closeReviewModal(); alert("Hệ thống phát hiện bạn chưa gắn chìa khóa API. Cửa sổ cấu hình sẽ mở ra ngay bây giờ!"); window.openAIConfigModal(); return; }
+            const keyCheck = await window.ensureUserApiKey();
+            if (!keyCheck && !window.UEHNEST_AI_PROXY_URL) {
+                window.closeReviewModal();
+                alert("Hệ thống phát hiện bạn chưa gắn chìa khóa API. Cửa sổ cấu hình sẽ mở ra ngay bây giờ!");
+                window.openAIConfigModal();
+                return;
+            }
 
             const totalMistakes = Object.keys(window.userMistakesDB).length;
             if (totalMistakes === 0 && window.currentSessionMistakes.length === 0) { alert("Bạn chưa làm sai câu nào cả, Gia Sư AI không có dữ liệu để phân tích đâu!"); return; }
@@ -2293,25 +2442,9 @@ window.reverseSelectedSubjectChapters = async function() {
             const systemPrompt = `Bạn là một giáo sư xuất sắc, chuyên kèm sinh viên học môn ${currentSubject} (theo chuẩn Đại học UEH). Dưới đây là các câu hỏi mà sinh viên này làm SAI.\nHãy làm 3 việc:\n1. Đánh giá sinh viên này đang hổng kiến thức ở phần nào, chương nào.\n2. Đưa ra lộ trình và lời khuyên ôn tập ngắn gọn, dễ hiểu.\n3. Chỉ ra 2 mẹo ghi nhớ (tips/tricks) cho phần kiến thức hay sai đó.\nTrả về định dạng HTML cơ bản (chỉ dùng <b>, <ul>, <li>, <h3>, <br>) để web hiển thị đẹp mắt. Xưng hô thân thiện: "Gia sư AI" và "bạn".\n\n[DANH SÁCH CÂU SAI]:\n${promptData}`;
             
             try {
-                const cleanApiKey = window.userApiKey.replace(/[^a-zA-Z0-9_-]/g, ''); 
-                // Cắm thẳng API của bản 3.5 Flash mới nhất (bỏ qua bước fetch dò model dễ lỗi của Google)
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${cleanApiKey}`;
-                
-                const response = await fetch(apiUrl, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] }) 
-                });
-                
-                if (!response.ok) { 
-                    if (response.status === 429) throw new Error("Google báo quá tải do bạn gọi liên tục. Hãy đợi 1 phút rồi bấm phân tích lại nhé!");
-                    if (response.status === 400) throw new Error("API Key của bạn không hợp lệ hoặc đã bị khóa.");
-                    const errorDetails = await response.text(); throw new Error(errorDetails); 
-                }
-                
-                const data = await response.json();
-                const aiText = data.candidates[0].content.parts[0].text;
-                const finalHTML = `<div class="bg-violet-900/20 border border-violet-500/30 p-6 sm:p-8 rounded-xl shadow-inner prose prose-invert max-w-none prose-violet">${aiText.replace(/```html|```/g, '')}</div>`;
+                const aiText = await window.callGeminiGenerate(systemPrompt, 'gemini-2.5-flash');
+                const cleanAIHTML = window.kdSanitizeHTML(aiText.replace(/```html|```/g, ''));
+                const finalHTML = `<div class="bg-violet-900/20 border border-violet-500/30 p-6 sm:p-8 rounded-xl shadow-inner prose prose-invert max-w-none prose-violet">${cleanAIHTML}</div>`;
                 
                 aiContent.innerHTML = finalHTML;
 
@@ -2320,7 +2453,7 @@ window.reverseSelectedSubjectChapters = async function() {
 
             } catch (error) {
                 console.error("LỖI:", error); 
-                aiContent.innerHTML = `<div class="text-center py-10 px-4"><i class="fa-solid fa-triangle-exclamation text-4xl text-rose-500 mb-4 block"></i><p class="text-rose-400 font-bold mb-2">Đã có lỗi xảy ra!</p><div class="bg-slate-900 p-4 rounded-lg text-left text-xs text-rose-300 font-mono overflow-auto mb-4 border border-rose-500/30">${error.message}</div><button onclick="window.openAIConfigModal()" class="mt-2 px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-bold transition-all shadow-md">Kiểm tra lại API Key</button></div>`;
+                aiContent.innerHTML = `<div class="text-center py-10 px-4"><i class="fa-solid fa-triangle-exclamation text-4xl text-rose-500 mb-4 block"></i><p class="text-rose-400 font-bold mb-2">Đã có lỗi xảy ra!</p><div class="bg-slate-900 p-4 rounded-lg text-left text-xs text-rose-300 font-mono overflow-auto mb-4 border border-rose-500/30">${kdEscapeHTML(error.message)}</div><button onclick="window.openAIConfigModal()" class="mt-2 px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-bold transition-all shadow-md">Kiểm tra lại API Key</button></div>`;
             } finally {
                 isFetchingAI = false; 
             }
@@ -2371,7 +2504,7 @@ window.reverseSelectedSubjectChapters = async function() {
 
                     // Tự động tìm link trong tin nhắn và biến nó thành thẻ <a> có thể bấm được
                     let formatText = kdEscapeHTML(data.text).replace(/\n/g, '<br/>');
-                    formatText = formatText.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="underline text-amber-300 hover:text-amber-200 break-all">$1</a>');
+                    formatText = formatText.replace(/(https?:\/\/[^\s"'<>`]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline text-amber-300 hover:text-amber-200 break-all">$1</a>');
 
                     msgDiv.innerHTML = `
                         ${nameTag}
@@ -2586,6 +2719,14 @@ window.reverseSelectedSubjectChapters = async function() {
         }
 
         // Lấy dữ liệu lịch từ Firebase và vẽ lên màn hình
+        document.getElementById('schedule-list').addEventListener('click', e => {
+            const target = e.target.closest('[data-sch-action]');
+            if (!target) return;
+            const d = target.dataset;
+            if (d.schAction === 'toggle') window.toggleScheduleDone(d.id, d.done === '1');
+            else if (d.schAction === 'edit') window.openAddScheduleModal(d.id, d.title, d.date, d.time, d.type);
+            else if (d.schAction === 'delete') window.deleteSchedule(d.id);
+        });
         window.loadUserSchedules = async function() {
             if(!currentUser || !db) return;
             const listEl = document.getElementById('schedule-list');
@@ -2655,22 +2796,23 @@ window.reverseSelectedSubjectChapters = async function() {
                         const displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
                         const displayTime = item.time ? ` • ${item.time}` : '';
 
+                        const safeType = ['exam', 'deadline', 'other'].includes(item.type) ? item.type : 'other';
                         listEl.innerHTML += `
                             <div class="flex flex-col sm:flex-row items-start sm:items-center p-4 rounded-xl border ${bgBorder} transition-all group gap-4">
                                 <!-- Nút Checkmark -->
-                                <button onclick="window.toggleScheduleDone('${item.id}', ${item.isDone})" class="w-8 h-8 shrink-0 rounded-full border-2 ${item.isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-500 text-transparent hover:border-emerald-500'} flex items-center justify-center transition-all mt-1 sm:mt-0">
+                                <button data-sch-action="toggle" data-id="${kdEscapeHTML(item.id)}" data-done="${item.isDone ? '1' : '0'}" class="w-8 h-8 shrink-0 rounded-full border-2 ${item.isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-500 text-transparent hover:border-emerald-500'} flex items-center justify-center transition-all mt-1 sm:mt-0">
                                     <i class="fa-solid fa-check text-sm"></i>
                                 </button>
                                 
-                                <div class="flex-1 cursor-pointer" onclick="window.openAddScheduleModal('${item.id}', '${item.title.replace(/'/g, "\\'")}', '${item.date}', '${item.time || ''}', '${item.type}')">
+                                <div class="flex-1 cursor-pointer" data-sch-action="edit" data-id="${kdEscapeHTML(item.id)}" data-title="${kdEscapeHTML(item.title)}" data-date="${kdEscapeHTML(item.date)}" data-time="${kdEscapeHTML(item.time || '')}" data-type="${safeType}">
                                     <h4 class="text-lg font-bold ${textStyle} mb-1 transition-all group-hover:text-indigo-300">${kdEscapeHTML(item.title)}</h4>
                                     <div class="flex items-center text-sm font-medium ${dateStyle}">
                                         <i class="fa-solid ${icon} mr-2 ${color}"></i> 
-                                        ${displayDate}${displayTime}
+                                        ${kdEscapeHTML(displayDate)}${kdEscapeHTML(displayTime)}
                                     </div>
                                 </div>
                                 
-                                <button onclick="window.deleteSchedule('${item.id}')" class="w-10 h-10 shrink-0 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all opacity-100 sm:opacity-0 group-hover:opacity-100 absolute sm:relative right-4 top-4 sm:right-auto sm:top-auto">
+                                <button data-sch-action="delete" data-id="${kdEscapeHTML(item.id)}" class="w-10 h-10 shrink-0 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all opacity-100 sm:opacity-0 group-hover:opacity-100 absolute sm:relative right-4 top-4 sm:right-auto sm:top-auto">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
@@ -2684,8 +2826,9 @@ window.reverseSelectedSubjectChapters = async function() {
         // =========================================================
         // TÍNH NĂNG AI XẾP LỊCH TỰ ĐỘNG BẰNG NGÔN NGỮ TỰ NHIÊN
         // =========================================================
-        window.openAIScheduleModal = function() {
-            if (!window.userApiKey || window.userApiKey === "") {
+        window.openAIScheduleModal = async function() {
+            const keyCheck = await window.ensureUserApiKey();
+            if (!keyCheck && !window.UEHNEST_AI_PROXY_URL) {
                 alert("Bạn chưa cấu hình Google Gemini API Key. Vui lòng vào [Sảnh Chính] -> [Cấu Hình AI] để gắn chìa khóa vào nhé!");
                 window.openAIConfigModal();
                 return;
@@ -2723,20 +2866,7 @@ window.reverseSelectedSubjectChapters = async function() {
             Yêu cầu của người dùng: "${promptText}"`;
 
             try {
-                const cleanApiKey = window.userApiKey.replace(/[^a-zA-Z0-9_-]/g, ''); 
-                let selectedModel = 'gemini-3.5-flash-lite'; // Mặc định dùng flash cho nhanh
-
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${cleanApiKey}`;
-                const response = await fetch(apiUrl, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] }) 
-                });
-
-                if (!response.ok) throw new Error("API Key lỗi hoặc quá tải. Vui lòng thử lại sau.");
-
-                const data = await response.json();
-                let aiText = data.candidates[0].content.parts[0].text;
+                let aiText = await window.callGeminiGenerate(systemPrompt, 'gemini-2.5-flash');
                 
                 // Dọn dẹp markdown rác nếu AI lỡ xuất ra
                 aiText = aiText.replace(/```json/gi, '').replace(/```/gi, '').trim();
@@ -2937,8 +3067,9 @@ window.reverseSelectedSubjectChapters = async function() {
         // =========================================================
         // TÍNH NĂNG GIA SƯ AI CHUẨN "GU" UEH
         // =========================================================
-        window.openUEHAILab = function() {
-            if (!window.userApiKey || window.userApiKey === "") {
+        window.openUEHAILab = async function() {
+            const keyCheck = await window.ensureUserApiKey();
+            if (!keyCheck && !window.UEHNEST_AI_PROXY_URL) {
                 alert("Bạn chưa cắm API Key. Hãy vào Cấu Hình AI ở Sảnh Chính để mở khóa Gia Sư nhé!");
                 window.openAIConfigModal();
                 return;
@@ -2976,49 +3107,20 @@ window.reverseSelectedSubjectChapters = async function() {
             const finalPrompt = `${systemPersona}\n\n[TÀI LIỆU TỪ SINH VIÊN]:\n${contextText}\n\n[YÊU CẦU THÊM CỦA SINH VIÊN]:\n${userPrompt || 'Không có yêu cầu thêm, hãy làm theo nhiệm vụ mặc định.'}`;
 
             try {
-                const cleanApiKey = window.userApiKey.replace(/[^a-zA-Z0-9_-]/g, ''); 
-                
-                // 1. TỰ ĐỘNG DÒ TÌM MODEL ĐỂ CHỐNG LỖI 404
-                const modelsRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + cleanApiKey);
-                if (!modelsRes.ok) throw new Error("Mạng trường nay yếu quá hoặc API Key hết hạn rồi. Em kiểm tra lại Key nhé!");
-                
-                const modelsData = await modelsRes.json();
-                const validModels = modelsData.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'));
-                
-                if (validModels.length === 0) throw new Error("API Key của em không có quyền truy cập AI.");
-
-                // Ưu tiên dùng bản Pro cho thông minh, nếu không có thì lấy Flash
-                let selectedModel = validModels.find(m => m.name.includes('gemini-3.5-flash-lite')) || validModels[0];
-
-                // 2. GỌI API VỚI MODEL CHUẨN XÁC
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel.name}:generateContent?key=${cleanApiKey}`;
-                const response = await fetch(apiUrl, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ contents: [{ parts: [{ text: finalPrompt }] }] }) 
-                });
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error("Lỗi máy chủ AI: " + errText);
-                }
-
-                const data = await response.json();
-                let aiText = data.candidates[0].content.parts[0].text;
-                
-                // Format lại markdown cho đẹp trên web (Đổi **text** thành in đậm, \n thành <br>)
-                let formattedText = aiText
+                const aiText = await window.callGeminiGenerate(finalPrompt, 'gemini-2.5-flash');
+                let safeText = kdEscapeHTML(aiText)
                     .replace(/\*\*(.*?)\*\*/g, '<b class="text-indigo-300">$1</b>')
                     .replace(/\*(.*?)\*/g, '<i class="text-cyan-300">$1</i>')
                     .replace(/\n/g, '<br/>');
 
+                const formattedText = window.kdSanitizeHTML(safeText);
                 resultBox.innerHTML = `<div class="bg-indigo-900/20 p-5 rounded-2xl border border-indigo-500/30 shadow-inner">${formattedText}</div>`;
 
             } catch (error) {
                 resultBox.innerHTML = `
                     <div class="text-center p-6 bg-rose-900/20 border border-rose-500/50 rounded-xl">
                         <i class="fa-solid fa-triangle-exclamation text-4xl text-rose-500 mb-3 block"></i>
-                        <p class="text-rose-400 font-bold">${error.message}</p>
+                        <p class="text-rose-400 font-bold">${kdEscapeHTML(error.message)}</p>
                     </div>`;
             }
         }
