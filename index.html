@@ -93,7 +93,10 @@
     </div>
 
     <!-- KHUNG WIDGET DONATE -->
-    <div id="support-widget" class="hidden widget-base bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl p-3 flex items-center gap-4 max-w-[320px]">
+        <div id="support-widget" class="hidden widget-base bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl p-3 pr-8 flex items-center gap-4 max-w-[320px]">
+        <button type="button" onclick="window.closeSupportWidget(event)" title="Ẩn" aria-label="Đóng widget donate" class="absolute top-1.5 right-1.5 z-20 w-6 h-6 rounded-full bg-slate-700/80 hover:bg-rose-500 text-slate-200 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
         <button onclick="window.openBigQR()" class="shrink-0 relative group">
             <img id="small-qr-img" src="" alt="Donate QR" class="w-[72px] h-[72px] rounded-lg object-cover border-2 border-emerald-500 group-hover:scale-105 transition-transform shadow-md">
             <div class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
@@ -108,7 +111,9 @@
             </div>
         </div>
     </div>
-
+    <button id="support-mini-btn" type="button" onclick="window.openSupportWidget()" title="Mời cafe nhà phát triển" aria-label="Mở lại donate" class="hidden fixed bottom-4 left-4 z-[90] w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 hover:scale-110 text-white text-xl shadow-[0_0_15px_rgba(16,185,129,0.5)] border-2 border-emerald-300/50 transition-all flex items-center justify-center">
+        <i class="fa-solid fa-mug-hot"></i>
+    </button>
     <!-- MODALS CHUNG -->
     <div id="qr-modal" class="hidden fixed inset-0 z-[300] bg-slate-900/95 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300">
         <div class="bg-slate-800 p-4 rounded-3xl border-2 border-emerald-500/50 shadow-[0_0_50px_rgba(16,185,129,0.3)] relative flex flex-col items-center">
@@ -1091,6 +1096,7 @@
         window.userMistakesDB = {}; 
         window.examTimerInterval = null;
         window.lastRandomLimit = 50; window.lastRandomTime = 60;
+        let supportMorphTimer = null;
 
 function triggerWelcomeAnimation(fullname, isNewUser = false) {
             document.getElementById('loading-overlay').classList.add('hidden');
@@ -1116,10 +1122,22 @@ function triggerWelcomeAnimation(fullname, isNewUser = false) {
                     document.getElementById('big-qr-img').src = QR_IMAGE_URL; 
                     document.getElementById('link-fb').href = FB_LINK; 
                     document.getElementById('link-mail').href = MAIL_LINK;
-                    const widget = document.getElementById('support-widget'); 
-                    widget.classList.remove('hidden', 'morph-corner'); 
-                    widget.classList.add('morph-center'); 
-                    setTimeout(() => { widget.classList.remove('morph-center'); widget.classList.add('morph-corner'); }, 2500);
+                                        const widget = document.getElementById('support-widget');
+                    let donateClosed = false;
+                    try { donateClosed = localStorage.getItem('uehnest_donate_closed') === '1'; } catch (e) {}
+                    if (!donateClosed) {
+                        if (supportMorphTimer) clearTimeout(supportMorphTimer);
+                        widget.classList.remove('hidden', 'morph-corner');
+                        widget.classList.add('morph-center');
+                        supportMorphTimer = setTimeout(() => {
+                            widget.classList.remove('morph-center');
+                            widget.classList.add('morph-corner');
+                            supportMorphTimer = null;
+                        }, 2500);
+                    } else {
+                        const miniBtn = document.getElementById('support-mini-btn');
+                        if (miniBtn) miniBtn.classList.remove('hidden');
+                    }
                     listenToScoresFromCloud(); 
                     listenToQuestionsFromCloud(); 
                     
@@ -1246,6 +1264,23 @@ function triggerWelcomeAnimation(fullname, isNewUser = false) {
             }, 1000);
         }
         window.closeBigQR = function() { document.getElementById('qr-modal').classList.add('hidden'); if (window.qrTimerInterval) clearInterval(window.qrTimerInterval); }
+
+        window.closeSupportWidget = function(event) {
+            if (event && event.stopPropagation) event.stopPropagation();
+            if (supportMorphTimer) { clearTimeout(supportMorphTimer); supportMorphTimer = null; }
+            try { localStorage.setItem('uehnest_donate_closed', '1'); } catch (e) {}
+            const w = document.getElementById('support-widget');
+            if (w) { w.classList.add('hidden'); w.classList.remove('morph-center', 'morph-corner'); }
+            const miniBtn = document.getElementById('support-mini-btn');
+            if (miniBtn) miniBtn.classList.remove('hidden');
+        }
+
+        window.openSupportWidget = function() {
+            const w = document.getElementById('support-widget');
+            const miniBtn = document.getElementById('support-mini-btn');
+            if (miniBtn) miniBtn.classList.add('hidden');
+            if (w) { w.classList.remove('hidden', 'morph-center'); w.classList.add('morph-corner'); }
+        }
 
         window.adminTimerInterval = null;
         function startAdminTimer(expiresAt, role) {
@@ -1646,6 +1681,9 @@ window.reverseSelectedSubjectChapters = async function() {
         window.closeLogoutModal = function() { document.getElementById('logout-confirm-modal').classList.add('hidden'); }
         window.executeLogout = async function() {
             window.closeLogoutModal();
+            if (supportMorphTimer) { clearTimeout(supportMorphTimer); supportMorphTimer = null; }
+            const miniBtn = document.getElementById('support-mini-btn');
+            if (miniBtn) miniBtn.classList.add('hidden');
             clearAISession();
             window.closeAIConfigModal();
             if(unsubscribeScores) unsubscribeScores(); if(unsubscribeQuestions) unsubscribeQuestions(); if(unsubscribeRole) unsubscribeRole();
