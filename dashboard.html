@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UEHNEST — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; background: #fff; color: #18181b; -webkit-font-smoothing: antialiased; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // ─── Icon Components (Lucide-style, hand-crafted SVGs) ───
+        const Icon = ({ d, size = 20, stroke = "currentColor", strokeWidth = 1.5, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke}
+                strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {Array.isArray(d) ? d.map((path, i) => <path key={i} d={path} />) : <path d={d} />}
+            </svg>
+        );
+
+        // Lucide icon paths
+        const icons = {
+            layoutDashboard: ["M3 3h7v9H3V3z", "M14 3h7v5h-7V3z", "M14 12h7v9h-7v-9z", "M3 16h7v5H3v-5z"],
+            bookOpen: ["M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2V3z", "M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7V3z"],
+            calendar: ["M16 2v4", "M8 2v4", "M3 10h18", "M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"],
+            folderOpen: ["M6 14l1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6.2A2 2 0 0 1 18.44 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2A2 2 0 0 0 12.07 6H18a2 2 0 0 1 2 2v2"],
+            fileText: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z", "M14 2v6h6", "M16 13H8", "M16 17H8", "M10 9H8"],
+            barChart3: ["M12 20V10", "M18 20V4", "M6 20v-4"],
+            search: ["M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z", "M21 21l-4.35-4.35"],
+            bell: ["M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9", "M13.73 21a2 2 0 0 1-3.46 0"],
+            menu: ["M4 12h16", "M4 6h16", "M4 18h16"],
+            x: ["M18 6L6 18", "M6 6l12 12"],
+            chevronRight: ["M9 18l6-6-6-6"],
+            download: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"],
+            arrowUpRight: ["M7 17L17 7", "M7 7h10v10"],
+            clock: ["M12 12m-10 0a10 10 0 1 0 20 0 10 10 0 1 0-20 0", "M12 6v6l4 2"],
+            trendingUp: ["M22 7l-8.5 8.5-5-5L2 17"],
+            fileSpreadsheet: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z", "M14 2v6h6", "M8 13h2", "M14 13h2", "M8 17h2", "M14 17h2"],
+            presentation: ["M2 3h20", "M3 3v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V3", "M8 21l4-4 4 4"],
+            settings: ["M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z", "M12 12m-3 0a3 3 0 1 0 6 0 3 3 0 1 0-6 0"],
+            logOut: ["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9"],
+        };
+
+        // ─── Sidebar Component ───
+        function Sidebar({ activePage, setActivePage, mobileOpen, setMobileOpen }) {
+            const navItems = [
+                { id: 'dashboard', label: 'Tổng quan', icon: icons.layoutDashboard },
+                { id: 'courses', label: 'Khóa học', icon: icons.bookOpen },
+                { id: 'schedule', label: 'Lịch học', icon: icons.calendar },
+                { id: 'documents', label: 'Tài liệu', icon: icons.folderOpen },
+                { id: 'exams', label: 'Đề thi thử', icon: icons.fileText },
+                { id: 'stats', label: 'Thống kê', icon: icons.barChart3 },
+            ];
+
+            const sidebarContent = (
+                <div className="flex flex-col h-full">
+                    {/* Logo */}
+                    <div className="px-5 py-6 flex items-center justify-between">
+                        <span className="text-lg font-bold text-zinc-900 tracking-tight">UEHNEST</span>
+                        <button
+                            className="md:hidden p-1 text-zinc-400 hover:text-zinc-600"
+                            onClick={() => setMobileOpen(false)}
+                        >
+                            <Icon d={icons.x} size={20} />
+                        </button>
+                    </div>
+
+                    {/* Navigation */}
+                    <nav className="flex-1 px-3 space-y-0.5">
+                        {navItems.map(item => {
+                            const isActive = activePage === item.id;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => { setActivePage(item.id); setMobileOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                                        isActive
+                                            ? 'bg-zinc-100 text-zinc-900 font-medium'
+                                            : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
+                                    }`}
+                                >
+                                    <Icon d={item.icon} size={18} strokeWidth={isActive ? 1.8 : 1.5} />
+                                    {item.label}
+                                </button>
+                            );
+                        })}
+                    </nav>
+
+                    {/* Separator */}
+                    <div className="border-t border-zinc-100 mx-3"></div>
+
+                    {/* Bottom links */}
+                    <div className="px-3 py-2">
+                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 transition-colors">
+                            <Icon d={icons.settings} size={18} />
+                            Cài đặt
+                        </button>
+                    </div>
+
+                    {/* User */}
+                    <div className="border-t border-zinc-100 px-4 py-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                                NK
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="text-sm font-medium text-zinc-900 truncate">Nguyễn Khải</div>
+                                <div className="text-xs text-zinc-400">Sinh viên K49</div>
+                            </div>
+                            <button className="text-zinc-300 hover:text-zinc-500 transition-colors flex-shrink-0">
+                                <Icon d={icons.logOut} size={16} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <>
+                    {/* Desktop sidebar */}
+                    <aside className="hidden md:flex flex-col w-60 border-r border-zinc-200 bg-white fixed inset-y-0 left-0 z-30">
+                        {sidebarContent}
+                    </aside>
+
+                    {/* Mobile overlay */}
+                    {mobileOpen && (
+                        <div className="md:hidden fixed inset-0 z-40">
+                            <div className="absolute inset-0 bg-zinc-900/20" onClick={() => setMobileOpen(false)}></div>
+                            <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
+                                {sidebarContent}
+                            </aside>
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        // ─── Top Bar ───
+        function TopBar({ setMobileOpen }) {
+            return (
+                <header className="flex items-center justify-between mb-8 md:mb-10">
+                    <div className="flex items-center gap-4">
+                        <button
+                            className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-600"
+                            onClick={() => setMobileOpen(true)}
+                        >
+                            <Icon d={icons.menu} size={22} />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">
+                                Chào buổi tối, Khải
+                            </h1>
+                            <p className="text-sm text-zinc-400 mt-0.5">
+                                Thứ Bảy, 31 tháng 10, 2026
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {/* Search */}
+                        <div className="hidden sm:flex items-center gap-2 border border-zinc-200 rounded-md px-3 py-1.5 text-sm text-zinc-400 hover:border-zinc-300 transition-colors cursor-text w-52">
+                            <Icon d={icons.search} size={15} strokeWidth={1.5} />
+                            <span>Tìm kiếm...</span>
+                            <kbd className="ml-auto text-[10px] font-medium text-zinc-300 bg-zinc-50 border border-zinc-200 rounded px-1.5 py-0.5">⌘K</kbd>
+                        </div>
+                        {/* Notification */}
+                        <button className="relative p-2 text-zinc-400 hover:text-zinc-600 transition-colors">
+                            <Icon d={icons.bell} size={19} />
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                    </div>
+                </header>
+            );
+        }
+
+        // ─── Stats Row ───
+        function StatsRow() {
+            const stats = [
+                { label: 'Khóa học đang học', value: '4', change: null },
+                { label: 'Giờ học tuần này', value: '12.5h', change: '+2.3h', positive: true },
+                { label: 'Bài thi hoàn thành', value: '23/30', change: '76.7%', positive: true },
+            ];
+
+            return (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+                    {stats.map((stat, i) => (
+                        <div key={i} className="border border-zinc-200 rounded-lg p-5">
+                            <div className="text-xs text-zinc-400 uppercase tracking-wider font-medium">
+                                {stat.label}
+                            </div>
+                            <div className="flex items-end gap-2 mt-2">
+                                <span className="text-2xl font-semibold text-zinc-900">{stat.value}</span>
+                                {stat.change && (
+                                    <span className={`text-xs font-medium mb-1 ${stat.positive ? 'text-green-600' : 'text-red-500'}`}>
+                                        {stat.change}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        // ─── Section Header ───
+        function SectionHeader({ title, action, onAction }) {
+            return (
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">{title}</h2>
+                    {action && (
+                        <button
+                            onClick={onAction}
+                            className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors flex items-center gap-1"
+                        >
+                            {action}
+                            <Icon d={icons.chevronRight} size={14} />
+                        </button>
+                    )}
+                </div>
+            );
+        }
+
+        // ─── Course Card ───
+        function CourseCard({ course }) {
+            const dotColors = { blue: 'bg-blue-500', emerald: 'bg-emerald-500', amber: 'bg-amber-500', violet: 'bg-violet-500' };
+            const barColors = { blue: 'bg-blue-600', emerald: 'bg-emerald-600', amber: 'bg-amber-600', violet: 'bg-violet-600' };
+
+            return (
+                <div className="border border-zinc-200 rounded-lg p-5 hover:border-zinc-300 transition-colors">
+                    {/* Category */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className={`w-2 h-2 rounded-full ${dotColors[course.color]}`}></span>
+                        <span className="text-xs text-zinc-400">{course.category}</span>
+                    </div>
+                    {/* Title */}
+                    <h3 className="text-base font-medium text-zinc-900 mb-1">{course.title}</h3>
+                    <p className="text-sm text-zinc-500 mb-4">GV: {course.instructor}</p>
+                    {/* Progress */}
+                    <div className="w-full h-1 bg-zinc-100 rounded-full overflow-hidden mb-2">
+                        <div
+                            className={`h-full rounded-full ${barColors[course.color]} transition-all`}
+                            style={{ width: `${course.progress}%` }}
+                        ></div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs text-zinc-400">{course.completed}/{course.total} bài</span>
+                        <span className="text-xs font-medium text-zinc-500">{course.progress}%</span>
+                    </div>
+                </div>
+            );
+        }
+
+        // ─── Course Grid ───
+        function CourseGrid() {
+            const courses = [
+                { title: 'Kinh tế Vĩ mô', category: 'Kinh tế học', instructor: 'Trần Minh Đức', color: 'blue', progress: 60, completed: 12, total: 20 },
+                { title: 'Nguyên lý Kế toán', category: 'Kế toán', instructor: 'Lê Thu Hằng', color: 'emerald', progress: 45, completed: 9, total: 20 },
+                { title: 'Luật Kinh doanh', category: 'Luật', instructor: 'Phạm Quốc Bảo', color: 'amber', progress: 80, completed: 16, total: 20 },
+            ];
+
+            return (
+                <section className="mb-10">
+                    <SectionHeader title="Khóa học của tôi" action="Xem tất cả" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {courses.map((course, i) => <CourseCard key={i} course={course} />)}
+                    </div>
+                </section>
+            );
+        }
+
+        // ─── Schedule List ───
+        function ScheduleList() {
+            const items = [
+                {
+                    color: 'border-l-blue-500',
+                    title: 'Kinh tế Vĩ mô',
+                    detail: 'Chương 5: Chính sách tiền tệ',
+                    time: '14:00 – 16:00',
+                    badge: 'Hôm nay',
+                    badgeStyle: 'bg-blue-50 text-blue-700',
+                    important: false
+                },
+                {
+                    color: 'border-l-emerald-500',
+                    title: 'Nguyên lý Kế toán',
+                    detail: 'Bài tập nhóm',
+                    time: '09:00 – 11:00',
+                    badge: 'Ngày mai',
+                    badgeStyle: 'bg-zinc-100 text-zinc-600',
+                    important: false
+                },
+                {
+                    color: 'border-l-amber-500',
+                    title: 'Luật Kinh doanh',
+                    detail: 'Kiểm tra giữa kỳ',
+                    time: '08:00 – 10:00',
+                    badge: '02/11',
+                    badgeStyle: 'bg-zinc-100 text-zinc-600',
+                    important: true
+                },
+                {
+                    color: 'border-l-zinc-300',
+                    title: 'Tiếng Anh',
+                    detail: 'Unit 7: Business Communication',
+                    time: '13:00 – 15:00',
+                    badge: '03/11',
+                    badgeStyle: 'bg-zinc-100 text-zinc-600',
+                    important: false
+                },
+            ];
+
+            return (
+                <section className="mb-10">
+                    <SectionHeader title="Lịch học sắp tới" action="Xem lịch" />
+                    <div className="border border-zinc-200 rounded-lg divide-y divide-zinc-100 overflow-hidden">
+                        {items.map((item, i) => (
+                            <div key={i} className={`flex items-center gap-4 p-4 border-l-2 ${item.color} hover:bg-zinc-50 transition-colors`}>
+                                {/* Time */}
+                                <div className="hidden sm:block w-28 flex-shrink-0">
+                                    <span className="text-sm font-medium text-zinc-900">{item.time.split(' – ')[0]}</span>
+                                    <span className="text-xs text-zinc-400 block">{item.time.split(' – ')[1] ? `– ${item.time.split(' – ')[1]}` : ''}</span>
+                                </div>
+                                {/* Content */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-sm font-medium text-zinc-900">{item.title}</span>
+                                        <span className="text-zinc-300">·</span>
+                                        <span className="text-sm text-zinc-500 truncate">{item.detail}</span>
+                                    </div>
+                                    <span className="sm:hidden text-xs text-zinc-400 mt-1 block">{item.time}</span>
+                                </div>
+                                {/* Badges */}
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    {item.important && (
+                                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-red-50 text-red-600">
+                                            Quan trọng
+                                        </span>
+                                    )}
+                                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${item.badgeStyle}`}>
+                                        {item.badge}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            );
+        }
+
+        // ─── Recent Documents ───
+        function RecentDocuments() {
+            const docs = [
+                { name: 'Slide Chương 5 - KTVM.pdf', tag: 'Kinh tế Vĩ mô', tagColor: 'bg-blue-50 text-blue-600', date: 'Hôm nay', icon: icons.presentation },
+                { name: 'Bài tập nhóm - Mẫu.docx', tag: 'Kế toán', tagColor: 'bg-emerald-50 text-emerald-600', date: '29/10', icon: icons.fileText },
+                { name: 'Đề cương ôn tập Giữa kỳ.pdf', tag: 'Luật KD', tagColor: 'bg-amber-50 text-amber-600', date: '28/10', icon: icons.fileText },
+                { name: 'Vocab List Unit 6-7.xlsx', tag: 'Tiếng Anh', tagColor: 'bg-zinc-100 text-zinc-600', date: '27/10', icon: icons.fileSpreadsheet },
+            ];
+
+            return (
+                <section className="mb-10">
+                    <SectionHeader title="Tài liệu gần đây" action="Tất cả tài liệu" />
+                    <div className="border border-zinc-200 rounded-lg divide-y divide-zinc-100 overflow-hidden">
+                        {docs.map((doc, i) => (
+                            <div key={i} className="flex items-center gap-4 p-4 hover:bg-zinc-50 transition-colors group">
+                                <div className="text-zinc-300 flex-shrink-0">
+                                    <Icon d={doc.icon} size={18} strokeWidth={1.5} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-sm text-zinc-900 group-hover:text-blue-600 transition-colors truncate block">{doc.name}</span>
+                                </div>
+                                <span className={`hidden sm:inline text-xs font-medium px-2 py-0.5 rounded ${doc.tagColor} flex-shrink-0`}>
+                                    {doc.tag}
+                                </span>
+                                <span className="text-xs text-zinc-400 flex-shrink-0 w-14 text-right">{doc.date}</span>
+                                <button className="text-zinc-300 hover:text-zinc-500 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100">
+                                    <Icon d={icons.download} size={16} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            );
+        }
+
+        // ─── Placeholder Page ───
+        function PlaceholderPage({ title, icon }) {
+            return (
+                <div className="flex flex-col items-center justify-center py-32 text-center">
+                    <div className="text-zinc-200 mb-4">
+                        <Icon d={icon} size={48} strokeWidth={1} />
+                    </div>
+                    <h2 className="text-xl font-semibold text-zinc-900 mb-2">{title}</h2>
+                    <p className="text-sm text-zinc-400 max-w-sm">
+                        Trang này đang được phát triển. Quay lại Tổng quan để xem dashboard.
+                    </p>
+                </div>
+            );
+        }
+
+        // ─── Dashboard Page ───
+        function DashboardPage({ setMobileOpen }) {
+            return (
+                <>
+                    <TopBar setMobileOpen={setMobileOpen} />
+                    <StatsRow />
+                    <CourseGrid />
+                    <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                        <div className="xl:col-span-3">
+                            <ScheduleList />
+                        </div>
+                        <div className="xl:col-span-2">
+                            <RecentDocuments />
+                        </div>
+                    </div>
+                </>
+            );
+        }
+
+        // ─── Courses Page ───
+        function CoursesPage({ setMobileOpen }) {
+            const allCourses = [
+                { title: 'Kinh tế Vĩ mô', category: 'Kinh tế học', instructor: 'Trần Minh Đức', color: 'blue', progress: 60, completed: 12, total: 20 },
+                { title: 'Nguyên lý Kế toán', category: 'Kế toán', instructor: 'Lê Thu Hằng', color: 'emerald', progress: 45, completed: 9, total: 20 },
+                { title: 'Luật Kinh doanh', category: 'Luật', instructor: 'Phạm Quốc Bảo', color: 'amber', progress: 80, completed: 16, total: 20 },
+                { title: 'Tiếng Anh TOEIC', category: 'Ngoại ngữ', instructor: 'Nguyễn Thị Lan', color: 'violet', progress: 30, completed: 6, total: 20 },
+            ];
+
+            const [viewMode, setViewMode] = useState('grid');
+
+            return (
+                <>
+                    <header className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                            <button className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-600" onClick={() => setMobileOpen(true)}>
+                                <Icon d={icons.menu} size={22} />
+                            </button>
+                            <div>
+                                <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">Khóa học</h1>
+                                <p className="text-sm text-zinc-400 mt-0.5">4 khóa học đang theo dõi</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
+                            >
+                                <Icon d={icons.layoutDashboard} size={16} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
+                            >
+                                <Icon d={icons.menu} size={16} />
+                            </button>
+                        </div>
+                    </header>
+
+                    {viewMode === 'grid' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {allCourses.map((course, i) => <CourseCard key={i} course={course} />)}
+                        </div>
+                    ) : (
+                        <div className="border border-zinc-200 rounded-lg divide-y divide-zinc-100 overflow-hidden">
+                            {allCourses.map((course, i) => {
+                                const dotColors = { blue: 'bg-blue-500', emerald: 'bg-emerald-500', amber: 'bg-amber-500', violet: 'bg-violet-500' };
+                                const barColors = { blue: 'bg-blue-600', emerald: 'bg-emerald-600', amber: 'bg-amber-600', violet: 'bg-violet-600' };
+                                return (
+                                    <div key={i} className="flex items-center gap-4 p-4 hover:bg-zinc-50 transition-colors">
+                                        <span className={`w-2 h-2 rounded-full ${dotColors[course.color]} flex-shrink-0`}></span>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-sm font-medium text-zinc-900">{course.title}</span>
+                                            <span className="text-xs text-zinc-400 ml-2">GV: {course.instructor}</span>
+                                        </div>
+                                        <div className="w-32 hidden sm:block">
+                                            <div className="w-full h-1 bg-zinc-100 rounded-full overflow-hidden">
+                                                <div className={`h-full rounded-full ${barColors[course.color]}`} style={{ width: `${course.progress}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <span className="text-xs text-zinc-400 w-12 text-right flex-shrink-0">{course.progress}%</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        // ─── Documents Page ───
+        function DocumentsPage({ setMobileOpen }) {
+            const folders = [
+                { name: 'Kinh tế Vĩ mô', count: 15, color: 'text-blue-500' },
+                { name: 'Nguyên lý Kế toán', count: 12, color: 'text-emerald-500' },
+                { name: 'Luật Kinh doanh', count: 8, color: 'text-amber-500' },
+                { name: 'Tiếng Anh TOEIC', count: 6, color: 'text-violet-500' },
+            ];
+
+            const recentFiles = [
+                { name: 'Slide Chương 5 - KTVM.pdf', folder: 'Kinh tế Vĩ mô', size: '2.4 MB', date: 'Hôm nay' },
+                { name: 'Bài tập nhóm - Mẫu.docx', folder: 'Kế toán', size: '580 KB', date: '29/10' },
+                { name: 'Đề cương ôn tập Giữa kỳ.pdf', folder: 'Luật KD', size: '1.8 MB', date: '28/10' },
+                { name: 'Vocab List Unit 6-7.xlsx', folder: 'Tiếng Anh', size: '320 KB', date: '27/10' },
+                { name: 'Tóm tắt Chương 3-4.pdf', folder: 'Kinh tế Vĩ mô', size: '1.2 MB', date: '25/10' },
+                { name: 'Case Study - Vinamilk.pdf', folder: 'Kế toán', size: '3.1 MB', date: '24/10' },
+            ];
+
+            return (
+                <>
+                    <header className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                            <button className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-600" onClick={() => setMobileOpen(true)}>
+                                <Icon d={icons.menu} size={22} />
+                            </button>
+                            <div>
+                                <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">Tài liệu</h1>
+                                <p className="text-sm text-zinc-400 mt-0.5">Quản lý tài liệu học tập</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Folders */}
+                    <SectionHeader title="Thư mục môn học" />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
+                        {folders.map((f, i) => (
+                            <button key={i} className="border border-zinc-200 rounded-lg p-4 text-left hover:border-zinc-300 hover:bg-zinc-50 transition-colors group">
+                                <div className={`${f.color} mb-3`}>
+                                    <Icon d={icons.folderOpen} size={22} />
+                                </div>
+                                <div className="text-sm font-medium text-zinc-900 truncate">{f.name}</div>
+                                <div className="text-xs text-zinc-400 mt-0.5">{f.count} tệp</div>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Recent Files */}
+                    <SectionHeader title="Tệp gần đây" />
+                    <div className="border border-zinc-200 rounded-lg overflow-hidden">
+                        {/* Table header */}
+                        <div className="grid grid-cols-12 gap-4 px-4 py-2.5 bg-zinc-50 text-xs font-medium text-zinc-400 uppercase tracking-wider border-b border-zinc-100">
+                            <div className="col-span-5">Tên tệp</div>
+                            <div className="col-span-3 hidden sm:block">Thư mục</div>
+                            <div className="col-span-2 hidden sm:block text-right">Kích thước</div>
+                            <div className="col-span-2 text-right">Ngày</div>
+                        </div>
+                        {recentFiles.map((file, i) => (
+                            <div key={i} className="grid grid-cols-12 gap-4 px-4 py-3 items-center border-b border-zinc-50 last:border-b-0 hover:bg-zinc-50 transition-colors group cursor-pointer">
+                                <div className="col-span-5 flex items-center gap-3 min-w-0">
+                                    <div className="text-zinc-300 flex-shrink-0">
+                                        <Icon d={icons.fileText} size={16} />
+                                    </div>
+                                    <span className="text-sm text-zinc-900 truncate group-hover:text-blue-600 transition-colors">{file.name}</span>
+                                </div>
+                                <div className="col-span-3 hidden sm:block text-xs text-zinc-400">{file.folder}</div>
+                                <div className="col-span-2 hidden sm:block text-xs text-zinc-400 text-right">{file.size}</div>
+                                <div className="col-span-2 text-xs text-zinc-400 text-right">{file.date}</div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
+        }
+
+        // ─── Schedule Page ───
+        function SchedulePage({ setMobileOpen }) {
+            const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+            const dates = [25, 26, 27, 28, 29, 30, 31];
+            const [selectedDay, setSelectedDay] = useState(6); // Saturday
+
+            const scheduleByDay = {
+                6: [
+                    { time: '14:00', duration: '2h', title: 'Kinh tế Vĩ mô', detail: 'Chương 5: Chính sách tiền tệ', room: 'B4-201', color: 'border-l-blue-500' },
+                ],
+                0: [
+                    { time: '09:00', duration: '2h', title: 'Nguyên lý Kế toán', detail: 'Bài tập nhóm', room: 'Online', color: 'border-l-emerald-500' },
+                ],
+                1: [
+                    { time: '08:00', duration: '2h', title: 'Luật Kinh doanh', detail: 'Kiểm tra giữa kỳ', room: 'A1-305', color: 'border-l-amber-500' },
+                    { time: '13:00', duration: '2h', title: 'Tiếng Anh', detail: 'Unit 7: Business Communication', room: 'C2-108', color: 'border-l-zinc-400' },
+                ],
+            };
+
+            const todaySchedule = scheduleByDay[selectedDay] || [];
+
+            return (
+                <>
+                    <header className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                            <button className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-600" onClick={() => setMobileOpen(true)}>
+                                <Icon d={icons.menu} size={22} />
+                            </button>
+                            <div>
+                                <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">Lịch học</h1>
+                                <p className="text-sm text-zinc-400 mt-0.5">Tuần 27/10 – 02/11, 2026</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Week strip */}
+                    <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+                        {days.map((day, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setSelectedDay(i)}
+                                className={`flex flex-col items-center px-4 py-3 rounded-lg min-w-[56px] transition-colors ${
+                                    selectedDay === i
+                                        ? 'bg-zinc-900 text-white'
+                                        : 'border border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50'
+                                }`}
+                            >
+                                <span className="text-xs font-medium mb-1">{day}</span>
+                                <span className="text-lg font-semibold">{dates[i]}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Day schedule */}
+                    {todaySchedule.length > 0 ? (
+                        <div className="space-y-3">
+                            {todaySchedule.map((item, i) => (
+                                <div key={i} className={`border border-zinc-200 rounded-lg p-5 border-l-2 ${item.color} hover:border-zinc-300 transition-colors`}>
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div>
+                                            <h3 className="text-base font-medium text-zinc-900">{item.title}</h3>
+                                            <p className="text-sm text-zinc-500 mt-0.5">{item.detail}</p>
+                                        </div>
+                                        <span className="text-xs text-zinc-400 bg-zinc-50 px-2 py-1 rounded flex-shrink-0">{item.room}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs text-zinc-400">
+                                        <span>{item.time}</span>
+                                        <span className="text-zinc-200">·</span>
+                                        <span>{item.duration}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-16">
+                            <div className="text-zinc-200 mb-3">
+                                <Icon d={icons.calendar} size={40} strokeWidth={1} className="mx-auto" />
+                            </div>
+                            <p className="text-sm text-zinc-400">Không có lịch học trong ngày này</p>
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        // ─── Stats Page ───
+        function StatsPage({ setMobileOpen }) {
+            const weeklyData = [
+                { day: 'T2', hours: 3.5, max: 5 },
+                { day: 'T3', hours: 2, max: 5 },
+                { day: 'T4', hours: 4, max: 5 },
+                { day: 'T5', hours: 1.5, max: 5 },
+                { day: 'T6', hours: 3, max: 5 },
+                { day: 'T7', hours: 2.5, max: 5 },
+                { day: 'CN', hours: 0, max: 5 },
+            ];
+
+            const subjectStats = [
+                { name: 'Kinh tế Vĩ mô', score: 8.2, tests: 5, trend: '+0.4' },
+                { name: 'Nguyên lý Kế toán', score: 7.5, tests: 4, trend: '+0.8' },
+                { name: 'Luật Kinh doanh', score: 8.8, tests: 6, trend: '-0.2' },
+                { name: 'Tiếng Anh TOEIC', score: 650, tests: 3, trend: '+30' },
+            ];
+
+            return (
+                <>
+                    <header className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                            <button className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-600" onClick={() => setMobileOpen(true)}>
+                                <Icon d={icons.menu} size={22} />
+                            </button>
+                            <div>
+                                <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">Thống kê</h1>
+                                <p className="text-sm text-zinc-400 mt-0.5">Theo dõi tiến độ học tập</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Overview stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                        {[
+                            { label: 'Tổng giờ học', value: '86h' },
+                            { label: 'Điểm TB', value: '8.1' },
+                            { label: 'Bài thi', value: '23' },
+                            { label: 'Streak', value: '12 ngày' },
+                        ].map((s, i) => (
+                            <div key={i} className="border border-zinc-200 rounded-lg p-4">
+                                <div className="text-xs text-zinc-400 uppercase tracking-wider font-medium">{s.label}</div>
+                                <div className="text-xl font-semibold text-zinc-900 mt-1.5">{s.value}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Weekly chart (CSS bars) */}
+                    <SectionHeader title="Giờ học trong tuần" />
+                    <div className="border border-zinc-200 rounded-lg p-5 mb-10">
+                        <div className="flex items-end justify-between gap-3 h-32">
+                            {weeklyData.map((d, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                                    <div className="text-xs text-zinc-400 font-medium">{d.hours > 0 ? `${d.hours}h` : ''}</div>
+                                    <div className="w-full bg-zinc-100 rounded-sm overflow-hidden flex items-end" style={{ height: '80px' }}>
+                                        <div
+                                            className="w-full bg-zinc-900 rounded-sm transition-all"
+                                            style={{ height: `${(d.hours / d.max) * 100}%` }}
+                                        ></div>
+                                    </div>
+                                    <div className="text-xs text-zinc-400">{d.day}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Subject scores */}
+                    <SectionHeader title="Điểm theo môn" />
+                    <div className="border border-zinc-200 rounded-lg divide-y divide-zinc-100 overflow-hidden">
+                        {subjectStats.map((s, i) => (
+                            <div key={i} className="flex items-center gap-4 p-4 hover:bg-zinc-50 transition-colors">
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-sm font-medium text-zinc-900">{s.name}</span>
+                                    <span className="text-xs text-zinc-400 ml-2">{s.tests} bài thi</span>
+                                </div>
+                                <span className={`text-xs font-medium ${s.trend.startsWith('+') ? 'text-green-600' : 'text-red-500'}`}>{s.trend}</span>
+                                <span className="text-lg font-semibold text-zinc-900 w-16 text-right">{s.score}</span>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
+        }
+
+        // ─── App ───
+        function App() {
+            const [activePage, setActivePage] = useState('dashboard');
+            const [mobileOpen, setMobileOpen] = useState(false);
+
+            const pageMap = {
+                dashboard: <DashboardPage setMobileOpen={setMobileOpen} />,
+                courses: <CoursesPage setMobileOpen={setMobileOpen} />,
+                schedule: <SchedulePage setMobileOpen={setMobileOpen} />,
+                documents: <DocumentsPage setMobileOpen={setMobileOpen} />,
+                exams: <PlaceholderPage title="Đề thi thử" icon={icons.fileText} />,
+                stats: <StatsPage setMobileOpen={setMobileOpen} />,
+            };
+
+            return (
+                <div className="min-h-screen bg-white">
+                    <Sidebar
+                        activePage={activePage}
+                        setActivePage={setActivePage}
+                        mobileOpen={mobileOpen}
+                        setMobileOpen={setMobileOpen}
+                    />
+                    <main className="md:ml-60">
+                        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-8">
+                            {pageMap[activePage] || pageMap.dashboard}
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        // ─── Mount ───
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
