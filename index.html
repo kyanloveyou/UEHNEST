@@ -37,7 +37,8 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Manrope:wght@600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -45,9 +46,9 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-                        display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace']
+                        sans: ['"Pretendard Variable"', 'Pretendard', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                        display: ['"Manrope"', '"Plus Jakarta Sans"', '"Pretendard Variable"', 'Inter', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
                     },
                     colors: {
                         ueh: {
@@ -58,78 +59,322 @@
                             orangeLight: '#fff4ed',
                             navy: '#0f2942',
                             coursera: '#0056d2'
+                        },
+                        ux: {
+                            page: 'var(--ux-page)',
+                            surface: 'var(--ux-surface)',
+                            surface2: 'var(--ux-surface-2)',
+                            surface3: 'var(--ux-surface-3)',
+                            ink: 'var(--ux-ink)',
+                            ink2: 'var(--ux-ink-2)',
+                            ink3: 'var(--ux-ink-3)',
+                            accent: 'var(--ux-accent)',
+                            mint: 'var(--ux-mint)',
+                            acid: '#D7FA68'
                         }
                     }
                 }
             }
         };
-        // Khởi tạo Theme Sáng / Tối ngay lập tức để tránh chớp màn hình (Mặc định: Light Mode chuẩn Coursera/Canvas UEH)
+        // Khởi tạo Theme Sáng / Tối & Lucian Labs Accent ngay lập tức để tránh chớp màn hình
         (function () {
             try {
                 const saved = localStorage.getItem('uehnest_theme');
+                const html = document.documentElement;
                 if (saved === 'dark') {
-                    document.documentElement.classList.add('dark');
+                    html.classList.add('dark');
+                    html.setAttribute('data-theme', 'dark');
                 } else {
-                    document.documentElement.classList.remove('dark');
+                    html.classList.remove('dark');
+                    html.setAttribute('data-theme', 'light');
                 }
+                const savedAccent = localStorage.getItem('uehnest_ux_accent') || 'ueh';
+                html.setAttribute('data-ux-accent', savedAccent);
+                if (localStorage.getItem('uehnest_ux_ambient') === 'off') {
+                    html.classList.add('ux-no-glow');
+                }
+                if (localStorage.getItem('uehnest_ux_focus') === 'on') {
+                    html.classList.add('ux-focus-mode');
+                }
+                window.uxAutoNext = localStorage.getItem('uehnest_ux_autonext') !== 'off';
+                window.uxHighlightEnabled = localStorage.getItem('uehnest_ux_highlight') !== 'off';
             } catch (e) { }
         })();
+
+        window.triggerLiquidMorph = function (el) {
+            if (!el) return;
+            el.classList.remove('is-morphing');
+            void el.offsetWidth;
+            el.classList.add('is-morphing');
+            clearTimeout(el._morphTimer);
+            el._morphTimer = setTimeout(() => el.classList.remove('is-morphing'), 560);
+        };
+
         window.toggleUEHTheme = function () {
             const html = document.documentElement;
             const isDark = html.classList.toggle('dark');
+            html.setAttribute('data-theme', isDark ? 'dark' : 'light');
             try { localStorage.setItem('uehnest_theme', isDark ? 'dark' : 'light'); } catch (e) { }
+            const btn = document.getElementById('theme-toggle-btn');
+            if (btn) window.triggerLiquidMorph(btn);
             window.updateThemeToggleUI();
         };
+
         window.updateThemeToggleUI = function () {
             const isDark = document.documentElement.classList.contains('dark');
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            const btn = document.getElementById('theme-toggle-btn');
             const icon = document.getElementById('theme-toggle-icon');
             const text = document.getElementById('theme-toggle-text');
-            if (icon) icon.className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-slate-600';
-            if (text) text.textContent = isDark ? 'Giao diện Sáng' : 'Giao diện Tối';
+            if (btn) {
+                btn.setAttribute('aria-checked', isDark ? 'true' : 'false');
+                btn.classList.toggle('is-on', isDark);
+            }
+            if (icon) icon.className = isDark ? 'fa-solid fa-moon text-[#B7A4FF]' : 'fa-solid fa-sun text-amber-500';
+            if (text) text.textContent = isDark ? 'Dark' : 'Light';
         };
-        window.addEventListener('DOMContentLoaded', () => window.updateThemeToggleUI());
+
+        window.setUXAccent = function (accent) {
+            const valid = ['ueh', 'lucian', 'workbench'].includes(accent) ? accent : 'ueh';
+            document.documentElement.setAttribute('data-ux-accent', valid);
+            try { localStorage.setItem('uehnest_ux_accent', valid); } catch (e) { }
+            window.updateUXAccentUI();
+        };
+
+        window.updateUXAccentUI = function () {
+            const current = document.documentElement.getAttribute('data-ux-accent') || 'ueh';
+            const container = document.getElementById('ux-accent-selector');
+            if (!container) return;
+            const btns = container.querySelectorAll('[data-accent-btn]');
+            const glider = document.getElementById('ux-accent-glider');
+            btns.forEach((b, idx) => {
+                const active = b.getAttribute('data-accent-btn') === current;
+                b.setAttribute('aria-pressed', active ? 'true' : 'false');
+                b.classList.toggle('is-active', active);
+                if (active && glider) {
+                    glider.style.transform = `translateX(${idx * 100}%)`;
+                }
+            });
+        };
+
+        window.toggleUXPreference = function (prefKey, switchEl) {
+            const html = document.documentElement;
+            if (!switchEl) return;
+            const nextState = switchEl.getAttribute('aria-checked') !== 'true';
+            switchEl.setAttribute('aria-checked', nextState ? 'true' : 'false');
+            switchEl.classList.toggle('is-on', nextState);
+            window.triggerLiquidMorph(switchEl);
+
+            try {
+                if (prefKey === 'ambient') {
+                    html.classList.toggle('ux-no-glow', !nextState);
+                    localStorage.setItem('uehnest_ux_ambient', nextState ? 'on' : 'off');
+                } else if (prefKey === 'focus') {
+                    html.classList.toggle('ux-focus-mode', nextState);
+                    localStorage.setItem('uehnest_ux_focus', nextState ? 'on' : 'off');
+                } else if (prefKey === 'autonext') {
+                    window.uxAutoNext = nextState;
+                    localStorage.setItem('uehnest_ux_autonext', nextState ? 'on' : 'off');
+                    document.querySelectorAll('[data-ux-sync="autonext"]').forEach(el => {
+                        el.setAttribute('aria-checked', nextState ? 'true' : 'false');
+                        el.classList.toggle('is-on', nextState);
+                    });
+                } else if (prefKey === 'highlight') {
+                    window.uxHighlightEnabled = nextState;
+                    localStorage.setItem('uehnest_ux_highlight', nextState ? 'on' : 'off');
+                }
+            } catch (e) { }
+        };
+
+        window.syncUXPreferenceSwitches = function () {
+            const html = document.documentElement;
+            const amb = !html.classList.contains('ux-no-glow');
+            const foc = html.classList.contains('ux-focus-mode');
+            const autoN = window.uxAutoNext !== false;
+            const highL = window.uxHighlightEnabled !== false;
+            const setSw = (id, state) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.setAttribute('aria-checked', state ? 'true' : 'false');
+                    el.classList.toggle('is-on', state);
+                }
+            };
+            setSw('switch-ambient-glow', amb);
+            setSw('switch-focus-mode', foc);
+            setSw('switch-exam-autonext', autoN);
+            setSw('switch-quiz-autonext', autoN);
+            setSw('switch-quiz-highlight', highL);
+        };
+
+        // Hỗ trợ bàn phím (Space / Enter) và hiệu ứng Liquid Morph cho mọi .liquid-glass-switch
+        document.addEventListener('keydown', function (e) {
+            const sw = e.target.closest && e.target.closest('.liquid-glass-switch[role="switch"]');
+            if (!sw || sw.tagName === 'INPUT') return;
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                sw.click();
+            }
+        });
+        document.addEventListener('change', function (e) {
+            if (e.target && e.target.classList && e.target.classList.contains('liquid-glass-switch')) {
+                e.target.setAttribute('aria-checked', e.target.checked ? 'true' : 'false');
+                window.triggerLiquidMorph(e.target);
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            window.updateThemeToggleUI();
+            window.updateUXAccentUI();
+            window.syncUXPreferenceSwitches();
+        });
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js" crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-    <script src="vendor/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
 
     <style>
-        :root {
+        /* ==========================================================================
+           LUCIAN LABS (--ux-*) × UEHNEST ACADEMIC DESIGN TOKENS
+           Warm Alabaster (#F4F2EE) / Deep Obsidian (#07080D) + Spring Physics
+           ========================================================================== */
+        :root,
+        :root[data-theme="light"] {
+            /* Lucian UX/UI Prompt Core Tokens */
+            --ux-bg: #F4F2EE;
+            --ux-page: #F4F2EE;
+            --ux-surface: #FFFFFF;
+            --ux-surface-2: #F5F3EF;
+            --ux-surface-3: #EAE7E1;
+            --ux-ink: #16151B;
+            --ux-ink-2: #57535F;
+            --ux-ink-3: #8E8A97;
+            --ux-line: rgba(22, 21, 27, 0.09);
+            --ux-line-2: rgba(22, 21, 27, 0.17);
+            --ux-accent: #6A57F2;
+            --ux-accent-2: #2F8FE0;
+            --ux-accent-soft: rgba(106, 87, 242, 0.12);
+            --ux-accent-ink: #FFFFFF;
+            --ux-mint: #119C72;
+            --ux-warn: #D6731E;
+            --ux-danger: #D93A55;
+            --ux-glass: rgba(255, 255, 255, 0.58);
+            --ux-glass-line: rgba(255, 255, 255, 0.85);
+            --ux-shadow: rgba(40, 30, 80, 0.14);
+            --ux-shadow-strong: rgba(40, 30, 80, 0.30);
+            --ux-grad: linear-gradient(120deg, #7B61FF, #3D8BFF 55%, #1FB89A);
+
+            /* Lucian Gallery & Workbench Ambient Tokens */
+            --g-tile: #FFFFFF;
+            --g-bar: rgba(244, 242, 238, 0.82);
+            --g-glow: 22%;
+            --g-grain: 0.035;
+            --paper: #F4F4EF;
+            --acid: #D7FA68;
+            --acid-2: #C3EA4A;
+            --forest: #314734;
+
+            /* Lucian Motion Curves */
+            --ux-ease: cubic-bezier(.2, .8, .2, 1);
+            --ux-spring: cubic-bezier(.34, 1.45, .64, 1);
+
+            /* UEHNEST Brand & Semantic Mappings */
             --ueh-primary: #005f69;
             --ueh-primary-hover: #004850;
             --ueh-accent: #f26f21;
             --ueh-blue: #0056d2;
-            --bg-canvas: #f4f6f9;
-            --bg-surface: #ffffff;
-            --bg-subtle: #f8fafc;
-            --bg-muted: #f1f5f9;
-            --border-color: #e2e8f0;
-            --border-strong: #cbd5e1;
-            --text-main: #0f172a;
-            --text-secondary: #334155;
-            --text-muted: #64748b;
-            --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-            --card-shadow-hover: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 10px -6px rgba(15, 23, 42, 0.04);
+            --bg-canvas: var(--ux-page);
+            --bg-surface: var(--ux-surface);
+            --bg-subtle: var(--ux-surface-2);
+            --bg-muted: var(--ux-surface-3);
+            --border-color: var(--ux-line);
+            --border-strong: var(--ux-line-2);
+            --text-main: var(--ux-ink);
+            --text-secondary: var(--ux-ink-2);
+            --text-muted: var(--ux-ink-3);
+            --card-shadow: inset 0 0 0 1px var(--ux-line), 0 14px 34px -20px var(--ux-shadow), 0 2px 6px -1px rgba(22, 21, 27, 0.04);
+            --card-shadow-hover: inset 0 0 0 1px var(--ux-line-2), 0 28px 56px -26px var(--ux-shadow-strong), 0 6px 16px -4px rgba(40, 30, 80, 0.08);
         }
 
-        html.dark {
+        html.dark,
+        :root[data-theme="dark"] {
+            --ux-bg: #07080D;
+            --ux-page: #07080D;
+            --ux-surface: #13141C;
+            --ux-surface-2: #1A1B25;
+            --ux-surface-3: #252632;
+            --ux-ink: #F4F0E8;
+            --ux-ink-2: rgba(244, 240, 232, 0.68);
+            --ux-ink-3: rgba(244, 240, 232, 0.42);
+            --ux-line: rgba(255, 255, 255, 0.08);
+            --ux-line-2: rgba(255, 255, 255, 0.16);
+            --ux-accent: #B7A4FF;
+            --ux-accent-2: #7DB4FF;
+            --ux-accent-soft: rgba(183, 164, 255, 0.15);
+            --ux-accent-ink: #0B0C12;
+            --ux-mint: #7EE8C0;
+            --ux-warn: #FFB26B;
+            --ux-danger: #FF7D8C;
+            --ux-glass: rgba(255, 255, 255, 0.07);
+            --ux-glass-line: rgba(255, 255, 255, 0.18);
+            --ux-shadow: rgba(0, 0, 0, 0.45);
+            --ux-shadow-strong: rgba(0, 0, 0, 0.72);
+            --ux-grad: linear-gradient(120deg, #B7A4FF, #7DB4FF 55%, #A5F2D3);
+
+            --g-tile: #0E0F17;
+            --g-bar: rgba(7, 8, 13, 0.76);
+            --g-glow: 32%;
+            --g-grain: 0.06;
+
             --ueh-primary: #0d9488;
             --ueh-primary-hover: #14b8a6;
             --ueh-accent: #fb923c;
-            --ueh-blue: #3b82f6;
-            --bg-canvas: #0b111e;
-            --bg-surface: #111827;
-            --bg-subtle: #162032;
-            --bg-muted: #1e293b;
-            --border-color: #1f2937;
-            --border-strong: #334155;
-            --text-main: #f8fafc;
-            --text-secondary: #cbd5e1;
-            --text-muted: #94a3b8;
-            --card-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-            --card-shadow-hover: 0 12px 28px -6px rgba(0, 0, 0, 0.5);
+            --ueh-blue: #7DB4FF;
+            --bg-canvas: var(--ux-page);
+            --bg-surface: var(--ux-surface);
+            --bg-subtle: var(--ux-surface-2);
+            --bg-muted: var(--ux-surface-3);
+            --border-color: var(--ux-line);
+            --border-strong: var(--ux-line-2);
+            --text-main: var(--ux-ink);
+            --text-secondary: var(--ux-ink-2);
+            --text-muted: var(--ux-ink-3);
+            --card-shadow: inset 0 0 0 1px var(--ux-line), 0 18px 40px -20px var(--ux-shadow);
+            --card-shadow-hover: inset 0 0 0 1px var(--ux-line-2), 0 30px 60px -28px var(--ux-shadow-strong);
+        }
+
+        /* Lucian Accent Variations */
+        html[data-ux-accent="lucian"]:not(.dark) {
+            --ueh-primary: #6A57F2;
+            --ueh-primary-hover: #5643DF;
+        }
+        html[data-ux-accent="lucian"].dark {
+            --ueh-primary: #8B78FF;
+            --ueh-primary-hover: #A191FF;
+        }
+        html[data-ux-accent="workbench"]:not(.dark) {
+            --ux-page: #F4F4EF;
+            --ueh-primary: #314734;
+            --ueh-primary-hover: #243627;
+            --ux-accent: #314734;
+        }
+        html[data-ux-accent="workbench"].dark {
+            --ux-page: #0B0E0B;
+            --ux-surface: #141814;
+            --ux-surface-2: #1B201B;
+            --ueh-primary: #119C72;
+            --ueh-primary-hover: #15B887;
+        }
+
+        ::selection {
+            background: rgba(215, 250, 104, 0.65);
+            color: #16151B;
+        }
+        html.dark ::selection {
+            background: rgba(183, 164, 255, 0.35);
+            color: #F4F0E8;
         }
 
         @keyframes welcome-fly {
@@ -166,22 +411,45 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: var(--bg-canvas);
-            color: var(--text-main);
+            font-family: "Pretendard Variable", Pretendard, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--ux-page);
+            color: var(--ux-ink);
             min-height: 100vh;
             margin: 0;
             overflow-x: hidden;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+            letter-spacing: -0.01em;
             -webkit-font-smoothing: antialiased;
-            transition: background-color 0.2s ease, color 0.2s ease;
+            transition: background-color 0.35s var(--ux-ease), color 0.3s var(--ux-ease);
         }
 
         h1, h2, h3, h4, .font-display {
-            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-            letter-spacing: -0.015em;
+            font-family: 'Manrope', 'Plus Jakarta Sans', "Pretendard Variable", 'Inter', sans-serif;
+            letter-spacing: -0.032em;
         }
 
-        /* Thanh cuộn tinh gọn chuẩn LMS */
+        /* Tabular Numerals cho toàn bộ bộ đếm, đồng hồ, điểm số, KD Credit */
+        .font-mono,
+        .tabular-nums,
+        #exam-timer-display,
+        #admin-time-left,
+        #qr-countdown,
+        #score-10-display,
+        #score-correct,
+        #score-wrong,
+        #score-total,
+        #current-q-num,
+        #total-q-num,
+        .kd-coin-display,
+        #mistake-count,
+        #kdx-event-left,
+        #kdx-drop-left {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum" 1;
+        }
+
+        /* Thanh cuộn tinh gọn chuẩn Lucian Labs */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -192,12 +460,12 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
+            background: rgba(22, 21, 27, 0.18);
+            border-radius: 999px;
         }
 
         html.dark ::-webkit-scrollbar-thumb {
-            background: #334155;
+            background: rgba(255, 255, 255, 0.16);
         }
 
         .custom-scrollbar::-webkit-scrollbar {
@@ -210,25 +478,25 @@
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
+            background: rgba(22, 21, 27, 0.18);
+            border-radius: 999px;
         }
 
         html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #334155;
+            background: rgba(255, 255, 255, 0.16);
         }
 
         .widget-base {
             position: fixed;
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.55s var(--ux-spring);
         }
 
         .morph-center {
             bottom: 50%;
             left: 50%;
-            transform: translate(-50%, 50%) scale(1.08);
+            transform: translate(-50%, 50%) scale(1.06);
             z-index: 200;
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+            box-shadow: 0 30px 60px -28px var(--ux-shadow-strong);
         }
 
         .morph-corner {
@@ -238,48 +506,430 @@
             z-index: 90;
         }
 
+        /* Focus Mode (Zen) ẩn các widget nổi gây xao nhãng */
+        html.ux-focus-mode #support-widget,
+        html.ux-focus-mode #support-mini-btn,
+        html.ux-focus-mode #kdx-top {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transform: translateY(10px) scale(0.95) !important;
+        }
+
         /* ==========================================================================
-           ACADEMIC DESIGN SYSTEM (COURSERA / EDX / CANVAS UEH)
-           Loại bỏ hoàn toàn đèn neon, đổ bóng phát sáng & tương thích Sáng/Tối
+           LUCIAN LABS BENTO SURFACES, HAIRLINE RINGS & TACTILE PHYSICS
            ========================================================================== */
         .ueh-surface {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
+            background-color: var(--ux-surface);
+            border: 1px solid var(--ux-line);
+            border-radius: 24px;
             box-shadow: var(--card-shadow);
+            transition: background-color 0.3s var(--ux-ease), box-shadow 0.35s var(--ux-ease), border-color 0.3s var(--ux-ease);
         }
 
         .ueh-card-interactive {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
+            background-color: var(--ux-surface);
+            border: 1px solid var(--ux-line);
+            border-radius: 24px;
             box-shadow: var(--card-shadow);
-            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            transition: transform 0.48s var(--ux-spring), box-shadow 0.35s var(--ux-ease), border-color 0.3s var(--ux-ease), background-color 0.3s var(--ux-ease);
         }
 
         .ueh-card-interactive:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             box-shadow: var(--card-shadow-hover);
             border-color: var(--ueh-primary);
         }
 
+        .ueh-card-interactive:active {
+            transform: scale(0.975);
+        }
+
+        /* Dual-Radial Oklab Ambient Mesh Glow + Tactile Grain */
+        .lucian-ambient-banner {
+            position: relative;
+            overflow: hidden;
+            background-color: var(--ux-surface);
+            background-image:
+                radial-gradient(560px circle at 16% 18%, color-mix(in oklab, var(--ux-accent) var(--g-glow), transparent), transparent 68%),
+                radial-gradient(520px circle at 88% 86%, color-mix(in oklab, var(--ueh-primary) var(--g-glow), transparent), transparent 70%);
+            border: 1px solid var(--ux-line);
+            border-radius: 24px;
+            box-shadow: inset 0 1px 0 0 var(--ux-glass-line), var(--card-shadow);
+        }
+
+        .lucian-ambient-banner::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: var(--g-grain);
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 160px 160px;
+            z-index: 0;
+        }
+
+        html.ux-no-glow .lucian-ambient-banner {
+            background-image: none !important;
+        }
+        html.ux-no-glow .lucian-ambient-banner::before {
+            opacity: 0 !important;
+        }
+
+        /* Lucian Sticky Frosted Navbar */
+        .lucian-navbar {
+            background: var(--g-bar);
+            backdrop-filter: blur(20px) saturate(170%);
+            -webkit-backdrop-filter: blur(20px) saturate(170%);
+            border-bottom: 1px solid var(--ux-line);
+            box-shadow: 0 4px 24px -12px var(--ux-shadow);
+        }
+
+        /* Lucian Segmented Sliding Pill Control */
+        .lucian-segmented-pill {
+            position: relative;
+            display: inline-grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            padding: 3px;
+            border-radius: 999px;
+            background: var(--ux-surface-2);
+            box-shadow: inset 0 0 0 1px var(--ux-line);
+            user-select: none;
+        }
+
+        .lucian-pill-glider {
+            position: absolute;
+            top: 3px;
+            bottom: 3px;
+            left: 3px;
+            width: calc((100% - 6px) / 3);
+            border-radius: 999px;
+            background: var(--ux-ink);
+            box-shadow: 0 2px 8px rgba(22, 21, 27, 0.18);
+            transition: transform 0.52s var(--ux-spring);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .lucian-segmented-btn {
+            position: relative;
+            z-index: 1;
+            flex: 1 1 0%;
+            min-width: 58px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 999px;
+            color: var(--ux-ink-2);
+            transition: color 0.28s var(--ux-ease), transform 0.25s var(--ux-spring);
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .lucian-segmented-btn.is-active {
+            color: var(--ux-page) !important;
+        }
+
+        .lucian-segmented-btn:active {
+            transform: scale(0.95);
+        }
+
+        .lucian-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ueh-primary);
+            background: var(--ux-surface-2);
+            border: 1px solid var(--ux-line);
+        }
+
+        .lucian-kicker-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--ux-mint);
+            box-shadow: 0 0 8px var(--ux-mint);
+            display: inline-block;
+        }
+
+        .liquid-glass-switch--violet[aria-checked="true"],
+        .liquid-glass-switch--violet.is-on {
+            background: linear-gradient(135deg, rgba(106, 87, 242, 0.92) 0%, rgba(183, 164, 255, 0.88) 100%) !important;
+        }
+
+        .liquid-glass-switch--mint[aria-checked="true"],
+        .liquid-glass-switch--mint.is-on,
+        input.liquid-glass-switch--mint:checked {
+            background: linear-gradient(135deg, rgba(17, 156, 114, 0.92) 0%, rgba(0, 95, 105, 0.88) 100%) !important;
+        }
+
+        /* Primary Button & Tactile Press Choreography */
         .ueh-btn-primary {
-            background-color: #005f69;
+            background-color: var(--ueh-primary);
             color: #ffffff !important;
             font-weight: 600;
-            transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-            box-shadow: 0 1px 2px rgba(0, 95, 105, 0.2);
+            border-radius: 999px;
+            transition: background-color 0.28s var(--ux-ease), transform 0.42s var(--ux-spring), box-shadow 0.28s var(--ux-ease);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 6px 18px -6px rgba(0, 95, 105, 0.35);
         }
 
         .ueh-btn-primary:hover {
-            background-color: #004850;
-            box-shadow: 0 4px 12px rgba(0, 95, 105, 0.25);
+            background-color: var(--ueh-primary-hover);
+            transform: translateY(-1.5px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 24px -6px rgba(0, 95, 105, 0.42);
         }
 
-        html.dark .ueh-btn-primary {
-            background-color: #0d9488;
+        .ueh-btn-primary:active {
+            transform: scale(0.96);
         }
 
-        html.dark .ueh-btn-primary:hover {
-            background-color: #0f766e;
+        button:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--ux-accent);
+            outline-offset: 2px;
+        }
+
+        /* ==========================================================================
+           iPHONE iOS "LIQUID GLASS" ON/OFF SWITCH SYSTEM (.liquid-glass-switch)
+           Refractive Droplet Thumb, Specular Rim Highlights & Liquid Stretch Physics
+           ========================================================================== */
+        @keyframes liquid-droplet-on {
+            0% {
+                transform: translateX(0) scaleX(1) scaleY(1);
+            }
+            42% {
+                transform: translateX(calc(var(--lg-travel, 22px) * 0.52)) scaleX(1.18) scaleY(0.92);
+            }
+            78% {
+                transform: translateX(calc(var(--lg-travel, 22px) * 1.07)) scaleX(0.94) scaleY(1.04);
+            }
+            100% {
+                transform: translateX(var(--lg-travel, 22px)) scaleX(1) scaleY(1);
+            }
+        }
+
+        @keyframes liquid-droplet-off {
+            0% {
+                transform: translateX(var(--lg-travel, 22px)) scaleX(1) scaleY(1);
+            }
+            42% {
+                transform: translateX(calc(var(--lg-travel, 22px) * 0.48)) scaleX(1.18) scaleY(0.92);
+            }
+            78% {
+                transform: translateX(calc(var(--lg-travel, 22px) * -0.07)) scaleX(0.94) scaleY(1.04);
+            }
+            100% {
+                transform: translateX(0) scaleX(1) scaleY(1);
+            }
+        }
+
+        /* 1. Button-based & Container .liquid-glass-switch */
+        .liquid-glass-switch {
+            --lg-w: 52px;
+            --lg-h: 30px;
+            --lg-pad: 3px;
+            --lg-thumb-w: 24px;
+            --lg-thumb-h: 24px;
+            --lg-travel: calc(var(--lg-w) - var(--lg-thumb-w) - (var(--lg-pad) * 2));
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: var(--lg-w);
+            height: var(--lg-h);
+            padding: var(--lg-pad);
+            border-radius: 999px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            /* Frosted Glass Track (Off State) */
+            background: linear-gradient(180deg, rgba(22, 21, 27, 0.14) 0%, rgba(22, 21, 27, 0.08) 100%);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            box-shadow:
+                inset 0 2px 5px rgba(22, 21, 27, 0.14),
+                inset 0 -1px 2px rgba(255, 255, 255, 0.65),
+                0 2px 8px -2px rgba(40, 30, 80, 0.10);
+            transition:
+                background 0.38s var(--ux-ease),
+                border-color 0.38s var(--ux-ease),
+                box-shadow 0.38s var(--ux-ease),
+                transform 0.35s var(--ux-spring);
+            flex-shrink: 0;
+        }
+
+        html.dark .liquid-glass-switch {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 100%);
+            border-color: rgba(255, 255, 255, 0.24);
+            box-shadow:
+                inset 0 2px 6px rgba(0, 0, 0, 0.45),
+                inset 0 -1px 1.5px rgba(255, 255, 255, 0.16),
+                0 2px 10px rgba(0, 0, 0, 0.35);
+        }
+
+        /* Compact variant for inline toolbars & KDX checklists */
+        .liquid-glass-switch.liquid-glass-switch--sm {
+            --lg-w: 44px;
+            --lg-h: 25px;
+            --lg-pad: 2.5px;
+            --lg-thumb-w: 20px;
+            --lg-thumb-h: 20px;
+        }
+
+        /* Pill wrapper when pairing switch with icon + text label (like #theme-toggle-btn) */
+        .liquid-glass-pill-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px 4px 6px;
+            border-radius: 999px;
+            background: var(--ux-surface-2);
+            box-shadow: inset 0 0 0 1px var(--ux-line);
+            transition: background 0.3s var(--ux-ease), box-shadow 0.3s var(--ux-ease);
+        }
+        .liquid-glass-pill-control:hover {
+            box-shadow: inset 0 0 0 1px var(--ux-line-2);
+        }
+
+        /* Glass Track ON State — Vibrant Translucent UEH Teal / Lucian Mint / Electric Violet Liquid Glow */
+        .liquid-glass-switch[aria-checked="true"],
+        .liquid-glass-switch.is-on,
+        input.liquid-glass-switch:checked {
+            background: linear-gradient(135deg, rgba(0, 95, 105, 0.90) 0%, rgba(17, 156, 114, 0.88) 52%, rgba(106, 87, 242, 0.85) 100%) !important;
+            border-color: rgba(255, 255, 255, 0.58) !important;
+            box-shadow:
+                inset 0 1.5px 3px rgba(255, 255, 255, 0.45),
+                inset 0 -2px 5px rgba(0, 40, 45, 0.32),
+                0 0 18px -3px rgba(17, 156, 114, 0.45),
+                0 4px 12px -3px rgba(106, 87, 242, 0.30) !important;
+        }
+
+        html.dark .liquid-glass-switch[aria-checked="true"],
+        html.dark .liquid-glass-switch.is-on,
+        html.dark input.liquid-glass-switch:checked {
+            background: linear-gradient(135deg, rgba(13, 148, 136, 0.88) 0%, rgba(106, 87, 242, 0.88) 60%, rgba(183, 164, 255, 0.82) 100%) !important;
+            border-color: rgba(255, 255, 255, 0.48) !important;
+            box-shadow:
+                inset 0 1.5px 3px rgba(255, 255, 255, 0.42),
+                inset 0 -2px 6px rgba(11, 12, 18, 0.45),
+                0 0 22px -3px rgba(183, 164, 255, 0.48),
+                0 4px 14px -2px rgba(13, 148, 136, 0.35) !important;
+        }
+
+        /* Refractive Glass Knob (Thumb) — Child span or pseudo-element ::after */
+        .liquid-glass-switch .liquid-glass-thumb,
+        input.liquid-glass-switch::after {
+            content: "";
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: var(--lg-thumb-w);
+            height: var(--lg-thumb-h);
+            border-radius: 999px;
+            /* Translucent Refractive Liquid Droplet */
+            background:
+                radial-gradient(115% 95% at 28% 18%, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.72) 52%, rgba(244, 242, 238, 0.56) 100%);
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            /* Multi-layered Specular Top/Bottom Rim Highlights + Caustic Inner Glow + Soft Drop Shadow */
+            box-shadow:
+                inset 0 1.5px 2px rgba(255, 255, 255, 0.9),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.18),
+                inset 0 0 6px rgba(255, 255, 255, 0.65),
+                0 3px 10px rgba(22, 21, 27, 0.22),
+                0 1px 2.5px rgba(0, 0, 0, 0.14);
+            transform: translateX(0) scaleX(1) scaleY(1);
+            transform-origin: center center;
+            transition:
+                transform 0.54s var(--ux-spring),
+                background 0.32s var(--ux-ease),
+                box-shadow 0.32s var(--ux-ease);
+            pointer-events: none;
+        }
+
+        /* Specular caustic sheen inside thumb */
+        .liquid-glass-switch .liquid-glass-thumb::before {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 16%;
+            right: 16%;
+            height: 38%;
+            border-radius: 999px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 100%);
+            pointer-events: none;
+        }
+
+        /* Thumb in ON State */
+        .liquid-glass-switch[aria-checked="true"] .liquid-glass-thumb,
+        .liquid-glass-switch.is-on .liquid-glass-thumb,
+        input.liquid-glass-switch:checked::after {
+            transform: translateX(var(--lg-travel)) scaleX(1) scaleY(1);
+            background:
+                radial-gradient(120% 100% at 30% 18%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.82) 55%, rgba(225, 252, 244, 0.68) 100%);
+            box-shadow:
+                inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.18),
+                inset 0 0 8px rgba(126, 232, 192, 0.45),
+                0 4px 12px rgba(0, 45, 50, 0.28),
+                0 1px 3px rgba(0, 0, 0, 0.16);
+        }
+
+        /* Liquid Morphing Physics on Press (:active) & State Transition (.is-morphing) */
+        .liquid-glass-switch:active .liquid-glass-thumb,
+        input.liquid-glass-switch:active::after {
+            transform: translateX(2px) scaleX(1.18) scaleY(0.92) !important;
+        }
+
+        .liquid-glass-switch[aria-checked="true"]:active .liquid-glass-thumb,
+        .liquid-glass-switch.is-on:active .liquid-glass-thumb,
+        input.liquid-glass-switch:checked:active::after {
+            transform: translateX(calc(var(--lg-travel) - 2px)) scaleX(1.18) scaleY(0.92) !important;
+        }
+
+        .liquid-glass-switch.is-morphing[aria-checked="true"] .liquid-glass-thumb,
+        .liquid-glass-switch.is-morphing.is-on .liquid-glass-thumb,
+        input.liquid-glass-switch.is-morphing:checked::after {
+            animation: liquid-droplet-on 0.54s var(--ux-spring) forwards;
+        }
+
+        .liquid-glass-switch.is-morphing[aria-checked="false"] .liquid-glass-thumb,
+        .liquid-glass-switch.is-morphing:not(.is-on):not([aria-checked="true"]) .liquid-glass-thumb,
+        input.liquid-glass-switch.is-morphing:not(:checked)::after {
+            animation: liquid-droplet-off 0.54s var(--ux-spring) forwards;
+        }
+
+        /* Native Checkbox (<input type="checkbox" class="liquid-glass-switch">) Reset */
+        input[type="checkbox"].liquid-glass-switch {
+            appearance: none;
+            -webkit-appearance: none;
+            margin: 0;
+            vertical-align: middle;
+        }
+
+        /* ==========================================================================
+           ACCESSIBILITY: PREFERS-REDUCED-MOTION CLAMP
+           ========================================================================== */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
         }
 
         /* Gỡ bỏ mọi hiệu ứng neon shadow-[0_0_...] trên toàn trang */
@@ -288,21 +938,65 @@
         }
 
         /* ==========================================================================
-           CHẾ ĐỘ SÁNG (LIGHT MODE) — TỰ ĐỘNG CHUYỂN ĐỔI CÁC COMPONENT & MODULE KDX
+           BENTO RADIUS & HAIRLINE NORMALIZATION CHO THẺ & MODAL
            ========================================================================== */
+        #dashboard-grid > div,
+        #kdx-docs-list > div {
+            border-radius: 24px !important;
+            box-shadow: var(--card-shadow);
+            border-color: var(--ux-line) !important;
+            transition: transform 0.48s var(--ux-spring), box-shadow 0.35s var(--ux-ease), border-color 0.3s var(--ux-ease);
+        }
+        #dashboard-grid > div:hover,
+        #kdx-docs-list > div:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--card-shadow-hover);
+            border-color: var(--ueh-primary) !important;
+        }
+
+        #kdx-hub-extra > button {
+            border-radius: 22px !important;
+            background-color: var(--ux-surface) !important;
+            border-color: var(--ux-line) !important;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.45s var(--ux-spring), box-shadow 0.32s var(--ux-ease), border-color 0.28s var(--ux-ease);
+        }
+        #kdx-hub-extra > button:hover {
+            transform: translateY(-2.5px);
+            box-shadow: var(--card-shadow-hover);
+            border-color: var(--ueh-primary) !important;
+        }
+
+        /* ==========================================================================
+           CHẾ ĐỘ SÁNG & TỐI LUCIAN LABS — CHUYỂN ĐỔI CÁC COMPONENT & MODULE KDX
+           ========================================================================== */
+        html.dark .bg-slate-800,
+        html.dark .dark\:bg-slate-800 {
+            background-color: var(--ux-surface) !important;
+            border-color: var(--ux-line) !important;
+        }
+
+        html.dark .bg-slate-900,
+        html.dark .dark\:bg-slate-900 {
+            background-color: var(--ux-surface-2) !important;
+            border-color: var(--ux-line) !important;
+        }
+
         html:not(.dark) .bg-slate-800,
         html:not(.dark) .bg-slate-800\/90,
         html:not(.dark) .bg-slate-800\/95,
         html:not(.dark) .bg-slate-800\/80,
+        html:not(.dark) .bg-slate-800\/60,
         html:not(.dark) .bg-slate-800\/50,
         html:not(.dark) .bg-slate-800\/40 {
-            background-color: #ffffff !important;
-            border-color: #e2e8f0 !important;
-            color: #0f172a;
+            background-color: var(--ux-surface) !important;
+            border-color: var(--ux-line) !important;
+            color: var(--ux-ink);
         }
 
         html:not(.dark) .bg-slate-900,
         html:not(.dark) .bg-slate-900\/80,
+        html:not(.dark) .bg-slate-900\/70,
         html:not(.dark) .bg-slate-900\/60,
         html:not(.dark) .bg-slate-900\/50,
         html:not(.dark) .bg-slate-900\/40,
@@ -310,68 +1004,70 @@
         html:not(.dark) .bg-slate-950,
         html:not(.dark) .bg-slate-950\/80,
         html:not(.dark) .bg-slate-950\/70 {
-            background-color: #f8fafc !important;
-            border-color: #cbd5e1 !important;
-            color: #0f172a;
+            background-color: var(--ux-surface-2) !important;
+            border-color: var(--ux-line-2) !important;
+            color: var(--ux-ink);
         }
 
-        /* Lớp phủ mờ của Modal (Overlay) giữ nền tối mờ thanh lịch */
+        /* Lớp phủ mờ của Modal (Overlay) sử dụng Oklab mix theo chuẩn Lucian Labs */
         html:not(.dark) .fixed.inset-0.bg-slate-900\/95,
         html:not(.dark) .fixed.inset-0.bg-slate-900\/90,
         html:not(.dark) .fixed.inset-0.bg-slate-900\/85,
+        html:not(.dark) .fixed.inset-0.bg-slate-900\/80,
+        html:not(.dark) .fixed.inset-0.bg-slate-900\/60,
         html:not(.dark) .fixed.inset-0.bg-slate-950\/95,
         html:not(.dark) #loading-overlay,
         html:not(.dark) #welcome-overlay {
-            background-color: rgba(15, 23, 42, 0.55) !important;
-            backdrop-filter: blur(4px) !important;
+            background-color: rgba(22, 21, 27, 0.52) !important;
+            backdrop-filter: blur(6px) !important;
         }
 
         html:not(.dark) #welcome-overlay {
-            background-color: rgba(255, 255, 255, 0.96) !important;
+            background-color: rgba(244, 242, 238, 0.96) !important;
         }
 
         html:not(.dark) .bg-slate-700,
         html:not(.dark) .bg-slate-700\/80,
         html:not(.dark) .bg-slate-700\/50 {
-            background-color: #f1f5f9 !important;
-            color: #334155 !important;
-            border-color: #cbd5e1 !important;
+            background-color: var(--ux-surface-3) !important;
+            color: var(--ux-ink-2) !important;
+            border-color: var(--ux-line-2) !important;
         }
 
         html:not(.dark) .hover\:bg-slate-700:hover,
         html:not(.dark) .hover\:bg-slate-600:hover {
-            background-color: #e2e8f0 !important;
-            color: #0f172a !important;
+            background-color: #DFDCD4 !important;
+            color: var(--ux-ink) !important;
         }
 
         /* Chuyển đổi màu chữ trong Light Mode nhưng bảo toàn chữ trắng trên các nút có nền màu đậm */
         html:not(.dark) .text-white:not([class*="bg-emerald-"]):not([class*="bg-teal-"]):not([class*="bg-cyan-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-violet-"]):not([class*="bg-fuchsia-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-orange-"]):not([class*="bg-amber-"]):not([class*="bg-yellow-"]):not([class*="from-"]):not(.ueh-keep-white) {
-            color: #0f172a !important;
+            color: var(--ux-ink) !important;
         }
 
         html:not(.dark) .text-slate-100,
         html:not(.dark) .text-slate-200,
         html:not(.dark) .text-slate-300 {
-            color: #334155 !important;
+            color: var(--ux-ink-2) !important;
         }
 
         html:not(.dark) .text-slate-400,
         html:not(.dark) .text-slate-500 {
-            color: #64748b !important;
+            color: var(--ux-ink-3) !important;
         }
 
         /* Điều chỉnh các màu chữ neon sang tone đậm học thuật dễ đọc trên nền sáng */
         html:not(.dark) .text-cyan-400,
         html:not(.dark) .text-cyan-300,
         html:not(.dark) .text-cyan-200 {
-            color: #005f69 !important;
+            color: var(--ueh-primary) !important;
         }
 
         html:not(.dark) .text-emerald-400,
         html:not(.dark) .text-emerald-300,
         html:not(.dark) .text-emerald-200,
         html:not(.dark) .text-emerald-100 {
-            color: #047857 !important;
+            color: var(--ux-mint) !important;
         }
 
         html:not(.dark) .text-fuchsia-400,
@@ -380,7 +1076,7 @@
         html:not(.dark) .text-violet-400,
         html:not(.dark) .text-indigo-400,
         html:not(.dark) .text-indigo-300 {
-            color: #1e40af !important;
+            color: var(--ux-accent) !important;
         }
 
         html:not(.dark) .text-amber-400,
@@ -389,7 +1085,7 @@
         html:not(.dark) .text-yellow-400,
         html:not(.dark) .text-yellow-300,
         html:not(.dark) .text-yellow-200\/70 {
-            color: #b45309 !important;
+            color: var(--ux-warn) !important;
         }
 
         html:not(.dark) .text-rose-400,
@@ -397,7 +1093,7 @@
         html:not(.dark) .text-rose-200,
         html:not(.dark) .text-red-400,
         html:not(.dark) .text-red-300 {
-            color: #be123c !important;
+            color: var(--ux-danger) !important;
         }
 
         /* Điều chỉnh các nền cảnh báo / badge bán trong suốt trên nền sáng */
@@ -442,30 +1138,30 @@
         html:not(.dark) [class*="bg-indigo-500/2"],
         html:not(.dark) [class*="bg-blue-500/1"],
         html:not(.dark) [class*="bg-blue-500/2"] {
-            background-color: #eff6ff !important;
-            border-color: #bfdbfe !important;
+            background-color: var(--ux-accent-soft) !important;
+            border-color: rgba(106, 87, 242, 0.24) !important;
         }
 
         html:not(.dark) .border-slate-600,
         html:not(.dark) .border-slate-700,
         html:not(.dark) .border-slate-800 {
-            border-color: #e2e8f0 !important;
+            border-color: var(--ux-line-2) !important;
         }
 
-        html:not(.dark) input,
+        html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not(.liquid-glass-switch),
         html:not(.dark) select,
         html:not(.dark) textarea {
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-            border-color: #cbd5e1 !important;
+            background-color: var(--ux-surface) !important;
+            color: var(--ux-ink) !important;
+            border-color: var(--ux-line-2) !important;
             color-scheme: light !important;
         }
 
-        html:not(.dark) input:focus,
+        html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not(.liquid-glass-switch):focus,
         html:not(.dark) select:focus,
         html:not(.dark) textarea:focus {
-            border-color: #005f69 !important;
-            box-shadow: 0 0 0 3px rgba(0, 95, 105, 0.12) !important;
+            border-color: var(--ux-accent) !important;
+            box-shadow: 0 0 0 4px var(--ux-accent-soft) !important;
         }
     </style>
 
@@ -477,60 +1173,76 @@
 </head>
 
 <body class="flex flex-col items-center justify-start pt-16 pb-12 px-4 relative min-h-screen">
-    <!-- THANH ĐẦU TRANG HỌC THUẬT CHUẨN LMS (COURSERA / CANVAS UEH) -->
-    <div class="fixed top-0 inset-x-0 z-[85] h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-[#005f69] flex items-center justify-center text-white font-display font-bold text-sm ueh-keep-white shadow-sm">
+    <!-- THANH ĐẦU TRANG HỌC THUẬT CHUẨN LMS + LUCIAN LABS WORKBENCH -->
+    <div class="fixed top-0 inset-x-0 z-[85] h-14 lucian-navbar px-3 sm:px-6 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 sm:gap-3">
+            <div class="w-8 h-8 rounded-xl bg-[#005f69] flex items-center justify-center text-white font-display font-bold text-sm ueh-keep-white shadow-sm border border-white/20">
                 U
             </div>
             <div class="flex items-center gap-2">
                 <span class="font-display font-bold text-base tracking-tight text-slate-900 dark:text-white">UEHNEST</span>
-                <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#e6f4f5] text-[#005f69] dark:bg-teal-950 dark:text-teal-300 border border-[#005f69]/20">
-                    Academic Portal
+                <span class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-[#e6f4f5] text-[#005f69] dark:bg-teal-950/80 dark:text-teal-300 border border-[#005f69]/20">
+                    Academic · Lucian UI
                 </span>
             </div>
         </div>
 
-        <div class="flex items-center gap-2 sm:gap-3">
+        <div class="flex items-center gap-2 sm:gap-2.5">
+            <!-- Lucian Labs Style Accent Segmented Pill -->
+            <div id="ux-accent-selector" class="hidden lg:inline-flex lucian-segmented-pill" role="group" aria-label="Chọn phong cách chủ đề Lucian Labs">
+                <div id="ux-accent-glider" class="lucian-pill-glider"></div>
+                <button type="button" data-accent-btn="ueh" onclick="window.setUXAccent('ueh')" class="lucian-segmented-btn is-active" title="UEH Academic Teal & Orange">UEH</button>
+                <button type="button" data-accent-btn="lucian" onclick="window.setUXAccent('lucian')" class="lucian-segmented-btn" title="Lucian Labs Electric Violet & Mint">Lucian</button>
+                <button type="button" data-accent-btn="workbench" onclick="window.setUXAccent('workbench')" class="lucian-segmented-btn" title="Studio Workbench Forest & Paper">Studio</button>
+            </div>
+
             <button type="button" onclick="window.openGlobalSearch()" title="Tra cứu câu hỏi & học liệu"
-                class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors">
+                class="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-100/90 hover:bg-slate-200/90 text-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 transition-all">
                 <i class="fa-solid fa-magnifying-glass text-[#005f69] dark:text-teal-400"></i>
                 <span>Tra cứu nhanh</span>
             </button>
-            <button id="theme-toggle-btn" type="button" onclick="window.toggleUEHTheme()"
-                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-                title="Chuyển đổi giao diện Sáng / Tối">
-                <i id="theme-toggle-icon" class="fa-solid fa-moon text-slate-600"></i>
-                <span id="theme-toggle-text" class="hidden xs:inline sm:inline">Giao diện Tối</span>
-            </button>
+
+            <!-- iPhone iOS Liquid Glass Dark/Light Mode Switch -->
+            <div class="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full bg-slate-100/85 dark:bg-slate-800/85 border border-slate-200/80 dark:border-slate-700/80">
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 select-none cursor-pointer" onclick="window.toggleUEHTheme()">
+                    <i id="theme-toggle-icon" class="fa-solid fa-moon text-slate-600 text-[11px]"></i>
+                    <span id="theme-toggle-text" class="hidden md:inline text-[11px]">Giao diện Tối</span>
+                </span>
+                <button id="theme-toggle-btn" type="button" role="switch" aria-checked="false" aria-label="Chuyển đổi giao diện Sáng / Tối"
+                    onclick="window.toggleUEHTheme()"
+                    class="liquid-glass-switch liquid-glass-switch--sm"
+                    title="Gạt công tắc Liquid Glass để chuyển Chế độ Sáng / Tối">
+                    <span class="liquid-glass-thumb"></span>
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- TOOLTIP HIGHLIGHT ĐA MÀU -->
-    <div id="highlight-tooltip"
+    <div id="highlight-tooltip" onmousedown="event.preventDefault()"
         class="hidden fixed z-[9999] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 px-2.5 py-2 rounded-xl shadow-lg transform -translate-x-1/2 -translate-y-full mt-[-8px] items-center gap-2 transition-all">
         <!-- Nút Vàng -->
-        <button onclick="window.applyHighlight('bg-yellow-300 text-slate-900')"
+        <button type="button" onmousedown="event.preventDefault()" onclick="window.applyHighlight('bg-yellow-300 text-slate-900')"
             class="w-6 h-6 rounded-full bg-yellow-400 hover:scale-110 transition-transform shadow-sm border border-yellow-500"
             title="Bôi Vàng"></button>
         <!-- Nút Xanh lá -->
-        <button onclick="window.applyHighlight('bg-emerald-200 text-slate-900')"
+        <button type="button" onmousedown="event.preventDefault()" onclick="window.applyHighlight('bg-emerald-200 text-slate-900')"
             class="w-6 h-6 rounded-full bg-emerald-400 hover:scale-110 transition-transform shadow-sm border border-emerald-500"
             title="Bôi Xanh Lá"></button>
         <!-- Nút Xanh dương -->
-        <button onclick="window.applyHighlight('bg-sky-200 text-slate-900')"
+        <button type="button" onmousedown="event.preventDefault()" onclick="window.applyHighlight('bg-sky-200 text-slate-900')"
             class="w-6 h-6 rounded-full bg-cyan-400 hover:scale-110 transition-transform shadow-sm border border-cyan-500"
             title="Bôi Xanh Dương"></button>
         <!-- Nút Hồng -->
-        <button onclick="window.applyHighlight('bg-pink-200 text-slate-900')"
+        <button type="button" onmousedown="event.preventDefault()" onclick="window.applyHighlight('bg-pink-200 text-slate-900')"
             class="w-6 h-6 rounded-full bg-pink-400 hover:scale-110 transition-transform shadow-sm border border-pink-500"
             title="Bôi Hồng"></button>
         <!-- Nút Cam -->
-        <button onclick="window.applyHighlight('bg-orange-200 text-slate-900')"
+        <button type="button" onmousedown="event.preventDefault()" onclick="window.applyHighlight('bg-orange-200 text-slate-900')"
             class="w-6 h-6 rounded-full bg-orange-400 hover:scale-110 transition-transform shadow-sm border border-orange-500"
             title="Bôi Cam"></button>
         <!-- Nút Đỏ -->
-        <button onclick="window.applyHighlight('bg-red-200 text-slate-900')"
+        <button type="button" onmousedown="event.preventDefault()" onclick="window.applyHighlight('bg-red-200 text-slate-900')"
             class="w-6 h-6 rounded-full bg-red-500 hover:scale-110 transition-transform shadow-sm border border-red-600"
             title="Bôi Đỏ"></button>
     </div>
@@ -787,7 +1499,21 @@
                 onclick="window.closeFormatSelectionModal()"><i class="fa-solid fa-xmark text-lg"></i></button>
             <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-1"><i
                     class="fa-solid fa-sliders text-[#005f69] dark:text-teal-400 mr-2"></i>Cấu trúc Đề thi chuẩn</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mb-5">Chọn định dạng đề thi tương ứng với quy chuẩn đánh giá của học phần.</p>
+            <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mb-3.5">Chọn định dạng đề thi tương ứng với quy chuẩn đánh giá của học phần.</p>
+            <!-- Liquid Glass Exam Mode Option Bar -->
+            <div class="flex items-center justify-between px-3.5 py-2.5 mb-4 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700/80">
+                <div class="text-left pr-2">
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-forward-fast text-[#005f69] dark:text-teal-400"></i> Tự động chuyển câu khi thi
+                    </div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400">Tự sang câu tiếp theo sau khi chọn đáp án</div>
+                </div>
+                <button id="switch-exam-autonext" type="button" role="switch" aria-checked="true" data-ux-sync="autonext" aria-label="Tự động chuyển câu khi thi"
+                    onclick="window.toggleUXPreference('autonext', this)"
+                    class="liquid-glass-switch liquid-glass-switch--sm">
+                    <span class="liquid-glass-thumb"></span>
+                </button>
+            </div>
             <div class="space-y-2.5">
                 <button onclick="window.startCustomRandomQuiz(50, 60)"
                     class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-[#005f69] rounded-xl flex items-center transition-all group">
@@ -908,9 +1634,12 @@
 
     <!-- PHẦN 1: GIỚI THIỆU (PORTAL HEADER) -->
     <div id="intro-section" class="text-center max-w-lg mx-auto mt-6 mb-6 transition-all duration-300">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm mb-4 p-1.5">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm mb-3.5 p-1.5">
             <img src="https://i.postimg.cc/xCWCkzFB/UEHNEST-logo-3-nen-trang.jpg" alt="UEHNEST Logo"
                 class="w-full h-full object-cover rounded-xl">
+        </div>
+        <div class="mb-2">
+            <span class="lucian-kicker"><span class="lucian-kicker-dot"></span> UEHNEST · ACADEMIC WORKBENCH</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1.5">
             UEHNEST Academic
@@ -1078,30 +1807,65 @@
     <!-- SẢNH CHÍNH (HUB) SAU KHI ĐĂNG NHẬP -->
     <div id="main-hub-section" class="hidden w-full max-w-6xl px-2 sm:px-4 mt-4 flex-col items-center">
 
-        <!-- Khung Header: Tên + Ví KD Coin chuẩn Coursera/Canvas -->
-        <div class="w-full flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 ueh-surface p-6 rounded-2xl border-l-4 border-l-[#005f69]">
-            <div class="text-left">
-                <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#005f69] dark:text-teal-400 uppercase tracking-wider mb-1">
-                    <i class="fa-solid fa-building-columns"></i> Không gian học tập cá nhân
+        <!-- Khung Header: Tên + Ví KD Coin chuẩn Coursera/Canvas + Lucian Labs Ambient Surface -->
+        <div class="w-full flex flex-col mb-6 gap-4 ueh-surface lucian-ambient-banner p-6 sm:p-7 rounded-2xl border-l-4 border-l-[#005f69]">
+            <div class="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="text-left">
+                    <div class="inline-flex items-center gap-2 text-[11px] font-mono font-semibold text-[#005f69] dark:text-teal-400 uppercase tracking-widest mb-1.5">
+                        <span class="lucian-kicker-dot"></span>
+                        <span>001 // PERSONAL ACADEMIC WORKBENCH</span>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Xin chào, <span class="text-[#005f69] dark:text-teal-400 hub-display-name"></span></h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Chọn phân hệ bên dưới để bắt đầu ôn luyện học phần, tra cứu tài liệu hoặc theo dõi lịch thi.</p>
                 </div>
-                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Xin chào, <span class="text-[#005f69] dark:text-teal-400 hub-display-name"></span></h2>
-                <p class="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Chọn phân hệ bên dưới để bắt đầu ôn luyện học phần, tra cứu tài liệu hoặc theo dõi lịch thi.</p>
+
+                <!-- Nút Ví KD Coin -->
+                <button onclick="window.openQuestCenter()"
+                    class="group flex items-center bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-700/60 hover:border-amber-400 px-4 py-2.5 rounded-2xl transition-all shrink-0 shadow-sm">
+                    <div class="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center mr-3 text-white ueh-keep-white font-bold text-sm shadow-sm">
+                        KD
+                    </div>
+                    <div class="text-left pr-1">
+                        <div class="text-[10px] text-amber-800/70 dark:text-amber-300/70 font-semibold uppercase tracking-wider leading-none mb-1">Điểm thưởng học tập</div>
+                        <div class="text-amber-700 dark:text-amber-400 font-bold text-base leading-none font-mono"><span class="kd-coin-display">0</span> <span class="text-xs font-sans font-medium">Credit</span></div>
+                    </div>
+                </button>
             </div>
 
-            <!-- Nút Ví KD Coin -->
-            <button onclick="window.openQuestCenter()"
-                class="group flex items-center bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-700/60 hover:border-amber-400 px-4 py-2.5 rounded-xl transition-all shrink-0">
-                <div class="w-9 h-9 bg-amber-500 rounded-lg flex items-center justify-center mr-3 text-white ueh-keep-white font-bold text-sm shadow-sm">
-                    KD
+            <!-- Thanh Tùy Chỉnh Trải Nghiệm Lucian Labs & Công Tắc iOS Liquid Glass -->
+            <div class="w-full pt-3.5 border-t border-slate-200/70 dark:border-slate-700/70 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+                    <div class="inline-flex items-center gap-2.5">
+                        <button id="switch-ambient-glow" type="button" role="switch" aria-checked="true" aria-label="Bật hoặc tắt hiệu ứng ánh sáng nền Oklab"
+                            onclick="window.toggleUXPreference('ambient', this)"
+                            class="liquid-glass-switch liquid-glass-switch--sm">
+                            <span class="liquid-glass-thumb"></span>
+                        </button>
+                        <span class="font-medium text-slate-600 dark:text-slate-300 select-none cursor-pointer" onclick="document.getElementById('switch-ambient-glow').click()">
+                            <i class="fa-solid fa-wand-magic-sparkles text-[#005f69] dark:text-teal-400 mr-1"></i> Ánh sáng Oklab Ambient
+                        </span>
+                    </div>
+                    <div class="inline-flex items-center gap-2.5">
+                        <button id="switch-focus-mode" type="button" role="switch" aria-checked="false" aria-label="Bật hoặc tắt chế độ tập trung tối đa"
+                            onclick="window.toggleUXPreference('focus', this)"
+                            class="liquid-glass-switch liquid-glass-switch--sm liquid-glass-switch--violet">
+                            <span class="liquid-glass-thumb"></span>
+                        </button>
+                        <span class="font-medium text-slate-600 dark:text-slate-300 select-none cursor-pointer" onclick="document.getElementById('switch-focus-mode').click()">
+                            <i class="fa-solid fa-bullseye text-violet-600 dark:text-violet-400 mr-1"></i> Chế độ Tập trung (Zen)
+                        </span>
+                    </div>
                 </div>
-                <div class="text-left pr-1">
-                    <div class="text-[10px] text-amber-800/70 dark:text-amber-300/70 font-semibold uppercase tracking-wider leading-none mb-1">Điểm thưởng học tập</div>
-                    <div class="text-amber-700 dark:text-amber-400 font-bold text-base leading-none"><span class="kd-coin-display">0</span> <span class="text-xs font-medium">Credit</span></div>
+                <div class="flex items-center gap-1.5 lg:hidden">
+                    <span class="text-[11px] text-slate-400 mr-1">Accent:</span>
+                    <button type="button" onclick="window.setUXAccent('ueh')" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">UEH</button>
+                    <button type="button" onclick="window.setUXAccent('lucian')" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Lucian</button>
+                    <button type="button" onclick="window.setUXAccent('workbench')" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Studio</button>
                 </div>
-            </button>
+            </div>
         </div>
 
-        <!-- Lưới 3 phân hệ chính chuẩn LMS -->
+        <!-- Lưới 3 phân hệ chính chuẩn LMS Bento (24px radius, 1px hairline, spring physics) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 w-full">
             <button onclick="window.openQuizDashboard()"
                 class="ueh-card-interactive p-6 rounded-2xl flex flex-col items-start text-left group relative overflow-hidden">
@@ -1109,7 +1873,7 @@
                     <div class="w-12 h-12 bg-[#e6f4f5] dark:bg-teal-950/80 rounded-xl flex items-center justify-center text-[#005f69] dark:text-teal-400 border border-[#005f69]/15">
                         <i class="fa-solid fa-book-open-reader text-xl"></i>
                     </div>
-                    <span class="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Học phần & Đề thi</span>
+                    <span class="text-[11px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">01 · Học phần & Đề thi</span>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-[#005f69] dark:group-hover:text-teal-400 transition-colors">Khu Vực Huấn Luyện</h3>
                 <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-5 flex-1">Luyện tập câu hỏi trắc nghiệm theo từng chương, làm đề thi thử định kỳ và ôn tập câu sai.</p>
@@ -1124,7 +1888,7 @@
                     <div class="w-12 h-12 bg-blue-50 dark:bg-blue-950/80 rounded-xl flex items-center justify-center text-[#0056d2] dark:text-blue-400 border border-blue-500/15">
                         <i class="fa-solid fa-folder-open text-xl"></i>
                     </div>
-                    <span class="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Thư viện số</span>
+                    <span class="text-[11px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">02 · Thư viện số</span>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-[#0056d2] dark:group-hover:text-blue-400 transition-colors">Kho Tài Liệu</h3>
                 <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-5 flex-1">Tra cứu đề cương, slide bài giảng, tóm tắt lý thuyết và tài liệu được cộng đồng bảo chứng.</p>
@@ -1139,7 +1903,7 @@
                     <div class="w-12 h-12 bg-orange-50 dark:bg-orange-950/80 rounded-xl flex items-center justify-center text-[#f26f21] dark:text-orange-400 border border-orange-500/15">
                         <i class="fa-solid fa-calendar-days text-xl"></i>
                     </div>
-                    <span class="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Kế hoạch học tập</span>
+                    <span class="text-[11px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">03 · Kế hoạch học tập</span>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1.5 group-hover:text-[#f26f21] dark:group-hover:text-orange-400 transition-colors">Lịch Trình</h3>
                 <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-5 flex-1">Quản lý lịch thi, hạn nộp tiểu luận và tự động lên kế hoạch học tập cùng trợ lý AI.</p>
@@ -1514,13 +2278,33 @@
     <div id="quiz-section" class="hidden w-full max-w-6xl px-4 mt-6 flex-col lg:flex-row gap-6 mb-12">
         <div class="flex-1 flex flex-col">
             <div
-                class="bg-white dark:bg-slate-800 rounded-t-2xl px-5 py-4 border-t border-x border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                class="bg-white dark:bg-slate-800 rounded-t-2xl px-5 py-4 border-t border-x border-slate-200 dark:border-slate-700 flex flex-wrap justify-between items-center gap-3">
                 <button onclick="window.backToDashboard()"
-                    class="text-slate-600 dark:text-slate-300 hover:text-slate-900 bg-slate-100 dark:bg-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"><i
+                    class="text-slate-600 dark:text-slate-300 hover:text-slate-900 bg-slate-100 dark:bg-slate-700 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors"><i
                         class="fa-solid fa-arrow-left mr-1.5"></i> Thoát bài</button>
-                <h2 id="quiz-title" class="text-sm sm:text-base font-bold text-[#005f69] dark:text-teal-400 truncate max-w-[50%]">Học phần
+                <h2 id="quiz-title" class="text-sm sm:text-base font-bold text-[#005f69] dark:text-teal-400 truncate max-w-[42%]">Học phần
                 </h2>
-                <div class="text-slate-700 dark:text-slate-300 text-xs font-semibold bg-slate-100 dark:bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-mono">
+                <!-- Thanh công tắc iPhone iOS Liquid Glass cho Khu vực Thi / Ôn luyện -->
+                <div class="hidden sm:flex items-center gap-3.5 px-3 py-1 rounded-full bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700/80 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                    <span class="inline-flex items-center gap-1.5" title="Tự động chuyển sang câu tiếp theo khi chọn đáp án ở chế độ thi thử">
+                        <span>Tự chuyển câu</span>
+                        <button id="switch-quiz-autonext" type="button" role="switch" aria-checked="true" data-ux-sync="autonext" aria-label="Tự động chuyển câu"
+                            onclick="window.toggleUXPreference('autonext', this)"
+                            class="liquid-glass-switch liquid-glass-switch--sm">
+                            <span class="liquid-glass-thumb"></span>
+                        </button>
+                    </span>
+                    <span class="w-px h-3.5 bg-slate-300 dark:bg-slate-700"></span>
+                    <span class="inline-flex items-center gap-1.5" title="Bật/tắt bút dạ quang bôi màu từ khóa khi quét chọn văn bản">
+                        <span>Bút Highlight</span>
+                        <button id="switch-quiz-highlight" type="button" role="switch" aria-checked="true" aria-label="Bật hoặc tắt bút Highlight"
+                            onclick="window.toggleUXPreference('highlight', this)"
+                            class="liquid-glass-switch liquid-glass-switch--sm liquid-glass-switch--mint">
+                            <span class="liquid-glass-thumb"></span>
+                        </button>
+                    </span>
+                </div>
+                <div class="text-slate-700 dark:text-slate-300 text-xs font-semibold bg-slate-100 dark:bg-slate-900 px-3.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 font-mono">
                     Câu <span id="current-q-num" class="text-[#0056d2] dark:text-blue-400 text-sm font-bold">1</span>/<span
                         id="total-q-num">10</span></div>
             </div>
@@ -2823,6 +3607,9 @@
         window.closeFeedbackModal = function () { document.getElementById('feedback-modal').classList.add('hidden'); }
 
         function selectOption(selectedIndex, btnElement) {
+            if (window.uxHighlightEnabled !== false && window.getSelection && window.getSelection().toString().trim().length > 0) {
+                return;
+            }
             const q = currentQuestions[currentQuestionIndex];
             if (window.quizMode === 'exam') {
                 window.userAnswers[currentQuestionIndex] = selectedIndex;
@@ -2831,7 +3618,10 @@
                     if (idx === selectedIndex) btn.className = "w-full text-left p-4 rounded-xl border transition-all duration-150 option-btn text-sm sm:text-base leading-relaxed border-[#0056d2] bg-blue-50/90 dark:bg-blue-950/40 text-[#0056d2] dark:text-blue-200 font-semibold ring-1 ring-[#0056d2]";
                     else btn.className = "w-full text-left p-4 rounded-xl border transition-all duration-150 option-btn text-sm sm:text-base leading-relaxed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/60 hover:bg-teal-50/50 dark:hover:bg-slate-700 hover:border-[#005f69] text-slate-800 dark:text-slate-200";
                 });
-                renderQuestionPalette(); setTimeout(() => { if (currentQuestionIndex < currentQuestions.length - 1) window.nextQuestion(); }, 300);
+                renderQuestionPalette();
+                if (window.uxAutoNext !== false) {
+                    setTimeout(() => { if (currentQuestionIndex < currentQuestions.length - 1) window.nextQuestion(); }, 300);
+                }
             } else {
                 if (hasAnsweredCurrent) return; hasAnsweredCurrent = true;
                 const selectedOpt = currentShuffledOptions[selectedIndex], isCorrect = selectedOpt.isCorrect;
@@ -2878,16 +3668,35 @@
             if (typeof currentQuestionIndex === 'undefined' || !currentQuestions[currentQuestionIndex]) return;
             const q = currentQuestions[currentQuestionIndex];
 
-            // Lưu lại phần chữ câu hỏi
+            // Lưu lại phần chữ câu hỏi khi có thẻ <mark>, ngược lại xóa bản lưu cũ để render chuẩn
             const qEl = document.getElementById('question-text');
-            if (qEl && !qEl.innerText.includes('Đang tải câu hỏi...')) q.customHighlightedQuestion = qEl.innerHTML;
+            if (qEl && !qEl.innerText.includes('Đang tải câu hỏi...')) {
+                if (qEl.querySelector('mark')) {
+                    q.customHighlightedQuestion = qEl.innerHTML;
+                } else {
+                    delete q.customHighlightedQuestion;
+                }
+            }
 
-            // Lưu lại phần đáp án trắc nghiệm
+            // Lưu lại phần đáp án trắc nghiệm có chứa thẻ <mark>
             if (q.type !== 'fill-in') {
                 const opts = document.querySelectorAll('#options-container button.option-btn');
                 if (opts.length > 0) {
-                    q.customHighlightedOptions = [];
-                    opts.forEach((btn, idx) => { q.customHighlightedOptions[idx] = btn.innerHTML; });
+                    let hasAnyOptionMark = false;
+                    const savedOpts = [];
+                    opts.forEach((btn, idx) => {
+                        if (btn.querySelector('mark')) {
+                            savedOpts[idx] = btn.innerHTML;
+                            hasAnyOptionMark = true;
+                        } else {
+                            savedOpts[idx] = null;
+                        }
+                    });
+                    if (hasAnyOptionMark) {
+                        q.customHighlightedOptions = savedOpts;
+                    } else {
+                        delete q.customHighlightedOptions;
+                    }
                 }
             }
         };
@@ -3161,15 +3970,54 @@
         // Điền URL Cloudflare Worker Proxy (H1) nếu triển khai (để chuỗi rỗng "" nếu chỉ dùng BYOK H3)
         window.UEHNEST_AI_PROXY_URL = window.UEHNEST_AI_PROXY_URL || "";
 
-        // Hàm lọc sạch HTML bằng DOMPurify cho mọi dữ liệu từ AI hoặc người dùng
+        // Hàm lọc sạch HTML bằng DOMPurify (kèm bộ lọc DOM fallback an toàn khi offline/thiếu thư viện)
         window.kdSanitizeHTML = function (dirtyHTML) {
-            if (window.DOMPurify) {
-                return window.DOMPurify.sanitize(String(dirtyHTML ?? ''), {
-                    ALLOWED_TAGS: ['b', 'i', 'u', 'em', 'strong', 'ul', 'ol', 'li', 'h3', 'h4', 'br', 'p', 'div', 'span', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'mark'],
-                    ALLOWED_ATTR: ['class', 'title']
+            const raw = String(dirtyHTML ?? '');
+            const allowedTags = ['b', 'i', 'u', 'em', 'strong', 'ul', 'ol', 'li', 'h3', 'h4', 'br', 'p', 'div', 'span', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'mark', 'sub', 'sup'];
+            const allowedAttrs = ['class', 'title'];
+            if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+                return window.DOMPurify.sanitize(raw, {
+                    ALLOWED_TAGS: allowedTags,
+                    ALLOWED_ATTR: allowedAttrs
                 });
             }
-            return kdEscapeHTML(dirtyHTML).replace(/\n/g, '<br/>');
+            try {
+                const allowedTagSet = new Set(allowedTags.map(t => t.toUpperCase()));
+                const allowedAttrSet = new Set(allowedAttrs.map(a => a.toLowerCase()));
+                const dropWithContentTags = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'SVG', 'MATH', 'TEMPLATE', 'NOSCRIPT']);
+                const doc = new DOMParser().parseFromString(`<!DOCTYPE html><html><body>${raw}</body></html>`, 'text/html');
+                const cleanNode = (root) => {
+                    const children = Array.from(root.childNodes);
+                    for (const node of children) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            const tag = node.tagName.toUpperCase();
+                            if (dropWithContentTags.has(tag)) {
+                                node.remove();
+                                continue;
+                            }
+                            cleanNode(node);
+                            if (!allowedTagSet.has(tag)) {
+                                while (node.firstChild) {
+                                    root.insertBefore(node.firstChild, node);
+                                }
+                                node.remove();
+                            } else {
+                                for (const attr of Array.from(node.attributes)) {
+                                    if (!allowedAttrSet.has(attr.name.toLowerCase())) {
+                                        node.removeAttribute(attr.name);
+                                    }
+                                }
+                            }
+                        } else if (node.nodeType !== Node.TEXT_NODE) {
+                            node.remove();
+                        }
+                    }
+                };
+                cleanNode(doc.body);
+                return doc.body.innerHTML;
+            } catch (e) {
+                return kdEscapeHTML(raw).replace(/\n/g, '<br/>');
+            }
         };
 
         function aiStorageKey(kind) { return 'uehnest_' + kind + '_' + appId + '_' + (currentUser?.uid || ''); }
@@ -3490,6 +4338,11 @@
             const quizSection = document.getElementById('quiz-section'); // Cho phép bôi đen toàn bộ khu vực thi
             const tooltip = document.getElementById('highlight-tooltip');
             if (!tooltip || !quizSection) return;
+            if (window.uxHighlightEnabled === false) {
+                tooltip.classList.add('hidden');
+                tooltip.classList.remove('flex');
+                return;
+            }
 
             // Nếu bấm ra ngoài vùng làm bài VÀ cũng không bấm vào bảng màu thì giấu bảng màu đi
             if (!quizSection.contains(e.target) && !tooltip.contains(e.target)) {
@@ -3526,22 +4379,65 @@
         // 2. Chức năng tô màu theo ý thích
         window.applyHighlight = function (colorClass) {
             const selection = window.getSelection();
-            if (!selection.rangeCount) return;
+            if (!selection || !selection.rangeCount) return;
 
             const range = selection.getRangeAt(0);
             if (selection.toString().trim().length === 0) return;
 
-            // Tạo thẻ <mark> và ốp cái class màu mà người dùng vừa chọn vào
-            const mark = document.createElement('mark');
-            mark.className = `${colorClass} px-1 rounded font-bold cursor-pointer transition-all hover:opacity-60`;
-            mark.title = 'Bấm vào để tẩy xóa';
+            const qEl = document.getElementById('question-text');
+            const optsEl = document.getElementById('options-container');
+            const ancestor = range.commonAncestorContainer;
+            const inQuestion = qEl && qEl.contains(ancestor);
+            const inOptions = optsEl && optsEl.contains(ancestor);
+            if (!inQuestion && !inOptions) {
+                selection.removeAllRanges();
+                document.getElementById('highlight-tooltip').classList.add('hidden');
+                document.getElementById('highlight-tooltip').classList.remove('flex');
+                return;
+            }
+
+            const createMark = () => {
+                const mark = document.createElement('mark');
+                mark.className = `${colorClass} px-1 rounded font-bold cursor-pointer transition-all hover:opacity-60`;
+                mark.title = 'Bấm vào để tẩy xóa';
+                return mark;
+            };
 
             try {
-                range.surroundContents(mark);
+                if (range.startContainer === range.endContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
+                    range.surroundContents(createMark());
+                } else {
+                    const rootNode = ancestor.nodeType === Node.ELEMENT_NODE ? ancestor : ancestor.parentNode;
+                    const walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, {
+                        acceptNode: function (node) {
+                            if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+                            if (!range.intersectsNode(node)) return NodeFilter.FILTER_REJECT;
+                            const parentEl = node.parentElement;
+                            if (!parentEl || (!qEl?.contains(parentEl) && ! parentEl.closest?.('.option-btn'))) return NodeFilter.FILTER_REJECT;
+                            return NodeFilter.FILTER_ACCEPT;
+                        }
+                    });
+                    const textNodes = [];
+                    let currentNode;
+                    while ((currentNode = walker.nextNode())) {
+                        textNodes.push(currentNode);
+                    }
+                    textNodes.forEach(textNode => {
+                        const startOffset = (textNode === range.startContainer) ? range.startOffset : 0;
+                        const endOffset = (textNode === range.endContainer) ? range.endOffset : textNode.nodeValue.length;
+                        if (endOffset > startOffset && textNode.nodeValue.slice(startOffset, endOffset).trim().length > 0) {
+                            const subRange = document.createRange();
+                            subRange.setStart(textNode, startOffset);
+                            subRange.setEnd(textNode, endOffset);
+                            subRange.surroundContents(createMark());
+                        }
+                    });
+                }
             } catch (e) {
-                console.warn("Lỗi bọc thẻ HTML phức tạp.");
-                // Báo lỗi nhẹ nếu học sinh lỡ bôi đen lố qua các nút bấm hoặc xuống dòng bị đứt quãng
+                console.warn("Lỗi bọc thẻ HTML phức tạp:", e);
             }
+
+            if (typeof window.saveHighlights === 'function') window.saveHighlights();
 
             // Xóa bôi đen & giấu bảng màu đi
             selection.removeAllRanges();
@@ -3551,14 +4447,21 @@
 
         // 3. Cục tẩy: Bấm thẳng vào cục màu để nhả chữ về bình thường
         document.addEventListener('click', function (e) {
-            if (e.target && e.target.tagName === 'MARK') {
-                const parent = e.target.parentNode;
-                while (e.target.firstChild) {
-                    parent.insertBefore(e.target.firstChild, e.target);
+            const markEl = e.target && e.target.closest ? e.target.closest('mark') : (e.target && e.target.tagName === 'MARK' ? e.target : null);
+            if (markEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                const parent = markEl.parentNode;
+                if (parent) {
+                    while (markEl.firstChild) {
+                        parent.insertBefore(markEl.firstChild, markEl);
+                    }
+                    parent.removeChild(markEl);
+                    parent.normalize();
                 }
-                parent.removeChild(e.target);
+                if (typeof window.saveHighlights === 'function') window.saveHighlights();
             }
-        });
+        }, true);
         // =========================================================
         // TÍNH NĂNG LỊCH CÁ NHÂN (PERSONAL SCHEDULE)
         // =========================================================
@@ -4337,7 +5240,7 @@
                     '<select id="kdx-doc-sort" class="bg-slate-900/80 border border-slate-600 rounded-xl py-2.5 px-3 text-white text-sm"><option value="trust">Tin cậy nhất</option><option value="new">Mới nhất</option></select>' +
                     '</div>' +
                     '<div class="flex flex-wrap items-center justify-between gap-3 mb-4">' +
-                    '<div class="flex items-center gap-4 text-sm text-slate-400"><span id="kdx-doc-count"></span><label class="flex items-center gap-2 cursor-pointer select-none"><input id="kdx-doc-mine" type="checkbox" class="accent-cyan-500"> Chỉ tài liệu của tôi</label></div>' +
+                    '<div class="flex items-center gap-4 text-sm text-slate-400"><span id="kdx-doc-count"></span><label class="flex items-center gap-2.5 cursor-pointer select-none"><input id="kdx-doc-mine" type="checkbox" role="switch" aria-checked="false" class="liquid-glass-switch liquid-glass-switch--sm"> Chỉ tài liệu của tôi</label></div>' +
                     '<button data-kdx-act="share" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white font-bold rounded-xl shadow-lg text-sm"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Chia sẻ tài liệu</button>' +
                     '</div>' +
                     '<div id="kdx-doc-reward"></div>' +
@@ -5577,7 +6480,7 @@
             }
             function attachDocs() {
                 const list = document.getElementById('kdx-docs-list'), mine = document.getElementById('kdx-doc-mine'); if (!list || !mine) return;
-                if (!document.getElementById('m9-only-verified')) mine.closest('label').insertAdjacentHTML('afterend', '<label class="flex items-center gap-2 cursor-pointer select-none"><input id="m9-only-verified" type="checkbox" class="accent-emerald-500"' + (ui.onlyVerified ? ' checked' : '') + '> Chỉ Verified</label>');
+                if (!document.getElementById('m9-only-verified')) mine.closest('label').insertAdjacentHTML('afterend', '<label class="flex items-center gap-2.5 cursor-pointer select-none"><input id="m9-only-verified" type="checkbox" role="switch" aria-checked="' + (ui.onlyVerified ? 'true' : 'false') + '" class="liquid-glass-switch liquid-glass-switch--sm liquid-glass-switch--mint"' + (ui.onlyVerified ? ' checked' : '') + '> Chỉ Verified</label>');
                 if (!list._m9obs) { list._m9obs = new MutationObserver(decorate); list._m9obs.observe(list, { childList: true }); }
                 decorate();
             }
@@ -5665,7 +6568,7 @@
                     const d = (K.data.docs || []).find(x => x.id === v.docId); if (!d) return '';
                     return '<div data-m9-card="' + K.esc(v.docId) + '" data-v="' + v.contentVersion + '" class="p-4 rounded-2xl bg-emerald-900/20 border border-emerald-500/40 space-y-3"><div class="font-bold text-white">' + K.esc(d.title) + ' <span class="text-xs text-slate-400 font-normal">· ' + K.esc(d.subject) + ' · ' + K.esc(d.teacher || 'chưa rõ GV') + ' · v' + v.contentVersion + '</span></div>' +
                         '<a href="' + K.esc(K.safeUrl(d.url)) + '" target="_blank" rel="noopener noreferrer" class="inline-block text-sm text-cyan-300 hover:underline"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Mở tài liệu để kiểm tra</a>' +
-                        ['correctAnswers|Đáp án / nội dung chính xác', 'correctLecturer|Đúng giảng viên', 'stillRelevant|Còn phù hợp với đề hiện hành'].map(x => { const [k, l] = x.split('|'); return '<label class="flex items-center gap-2 text-sm text-slate-200 cursor-pointer"><input type="checkbox" data-m9-ck="' + k + '" class="accent-emerald-500"> ' + l + '</label>'; }).join('') +
+                        ['correctAnswers|Đáp án / nội dung chính xác', 'correctLecturer|Đúng giảng viên', 'stillRelevant|Còn phù hợp với đề hiện hành'].map(x => { const [k, l] = x.split('|'); return '<label class="flex items-center gap-2.5 text-sm text-slate-200 cursor-pointer select-none"><input type="checkbox" role="switch" aria-checked="false" data-m9-ck="' + k + '" class="liquid-glass-switch liquid-glass-switch--sm liquid-glass-switch--mint"> ' + l + '</label>'; }).join('') +
                         '<input data-m9-tsem class="' + F + '" placeholder="Học kỳ tài liệu áp dụng (VD: HK1 2025-2026)" value="' + K.esc(d.targetSemester || '') + '">' +
                         '<div class="flex gap-2"><button data-m9-a="verify" class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black rounded-xl text-sm"><i class="fa-solid fa-badge-check mr-2"></i>Xác nhận & gắn nhãn Verified</button><button data-m9-a="release" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-sm">Nhả bài</button></div></div>';
                 }).join('');
