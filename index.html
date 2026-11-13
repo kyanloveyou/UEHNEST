@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta name="google-site-verification" content="wdeP8djmwksQZR5VIysWIaZxwBQUdhoWb9b_6fytFYw" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UEHNEST - Nền tảng học tập cho Tân sinh viên</title>
+    <meta name="description"
+        content="Kho tài liệu học tập chọn lọc và đề thi thử dành riêng cho tân sinh viên các trường Đại học tại TP.HCM.">
+
+    <!-- BỘ THẺ OPEN GRAPH CHO FACEBOOK / MESSENGER / ZALO -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://uehnest.id.vn/">
+    <meta property="og:site_name" content="UEHNEST">
+    <meta property="og:title" content="UEHNEST - Nền tảng học tập & Đề thi thử Đại học">
+    <meta property="og:description"
+        content="Khám phá kho tài liệu chuẩn hóa, ngân hàng trắc nghiệm và lộ trình vượt môn dành cho Tân sinh viên.">
+
+    <!-- Đường dẫn ảnh Thumbnail (Bắt buộc phải có https:// đầy đủ ở đầu) -->
+    <meta property="og:image" content="https://uehnest.id.vn/thumbnail.jpg">
+    <meta property="og:image:secure_url" content="https://uehnest.id.vn/thumbnail.jpg">
+    <meta property="og:image:type" content="image/jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <!-- Thẻ bổ sung giúp hiển thị ảnh to (Large Card) trên các nền tảng khác -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="UEHNEST - Nền tảng học tập & Đề thi thử Đại học">
+    <meta name="twitter:description"
+        content="Khám phá kho tài liệu chuẩn hóa, ngân hàng trắc nghiệm và lộ trình vượt môn dành cho Tân sinh viên.">
+    <meta name="twitter:image" content="https://uehnest.id.vn/thumbnail.jpg">
+    <!-- THÊM FAVICON -->
+    <link rel="icon" type="image/png"
+        href="https://i.postimg.cc/9fgDpdF5/1776075834980-2202291857259398329-8487023581297031406-02250df9bc64ad0e40f1a5e07ce16c19.jpg">
+
+    <noscript><meta http-equiv="refresh" content="0; url=ueh-dashboard.html"></noscript>
+
+    <script>
+        // Zero-flash theme initialization (matches ueh-dashboard.html)
+        (function () {
+            try {
+                var savedTheme = localStorage.getItem('uehnest_theme');
+                var html = document.documentElement;
+                if (savedTheme === 'dark') {
+                    html.classList.add('dark');
+                    html.setAttribute('data-theme', 'dark');
+                } else {
+                    html.classList.remove('dark');
+                    html.setAttribute('data-theme', 'light');
+                }
+            } catch (e) { }
+        })();
+
+        // Extensible multi-school routing configuration
+        window.UEHNEST_SCHOOLS = {
+            ueh: { id: 'ueh', name: 'Đại học Kinh tế TP.HCM (UEH)', url: 'ueh-dashboard.html', active: true }
+        };
+        window.UEHNEST_DEFAULT_SCHOOL = 'ueh';
+
+        (function () {
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                var portalMode = params.get('portal');
+                var schoolParam = (params.get('school') || '').trim().toLowerCase();
+                var schools = window.UEHNEST_SCHOOLS || {};
+                var defaultKey = window.UEHNEST_DEFAULT_SCHOOL || 'ueh';
+                var selected = (schoolParam && Object.prototype.hasOwnProperty.call(schools, schoolParam) && schools[schoolParam] && schools[schoolParam].active)
+                    ? schools[schoolParam]
+                    : schools[defaultKey];
+
+                var targetUrl = (selected && selected.url) ? selected.url : 'ueh-dashboard.html';
+                window.UEHNEST_PORTAL_MODE = portalMode === 'select' ? 'select' : 'redirect';
+                window.UEHNEST_TARGET_URL = targetUrl + (window.location.search || '') + (window.location.hash || '');
+
+                if (window.UEHNEST_PORTAL_MODE !== 'select') {
+                    window.location.replace(window.UEHNEST_TARGET_URL);
+                }
+            } catch (e) {
+                window.UEHNEST_PORTAL_MODE = 'redirect';
+                window.UEHNEST_TARGET_URL = 'ueh-dashboard.html';
+                window.location.replace('ueh-dashboard.html');
+            }
+        })();
+    </script>
+
+    <style>
+        :root,
+        :root[data-theme="light"] {
+            --ux-bg: #F4F2EE;
+            --ux-surface: #FFFFFF;
+            --ux-surface-2: #F5F3EF;
+            --ux-ink: #16151B;
+            --ux-ink-2: #57535F;
+            --ux-ink-3: #8E8A97;
+            --ux-line: rgba(22, 21, 27, 0.09);
+            --ux-line-2: rgba(22, 21, 27, 0.17);
+            --ux-accent: #6A57F2;
+            --ux-accent-soft: rgba(106, 87, 242, 0.12);
+            --ux-mint: #119C72;
+            --ux-mint-soft: rgba(17, 156, 114, 0.12);
+            --ueh-primary: #005f69;
+            --ueh-accent: #f26f21;
+            --ux-shadow: rgba(40, 30, 80, 0.12);
+        }
+
+        html.dark,
+        :root[data-theme="dark"] {
+            --ux-bg: #07080D;
+            --ux-surface: #13141C;
+            --ux-surface-2: #1A1B25;
+            --ux-ink: #F4F0E8;
+            --ux-ink-2: rgba(244, 240, 232, 0.68);
+            --ux-ink-3: rgba(244, 240, 232, 0.42);
+            --ux-line: rgba(255, 255, 255, 0.08);
+            --ux-line-2: rgba(255, 255, 255, 0.16);
+            --ux-accent: #B7A4FF;
+            --ux-accent-soft: rgba(183, 164, 255, 0.15);
+            --ux-mint: #7EE8C0;
+            --ux-mint-soft: rgba(126, 232, 192, 0.14);
+            --ueh-primary: #2bb3c0;
+            --ueh-accent: #ff8c42;
+            --ux-shadow: rgba(0, 0, 0, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background-color: var(--ux-bg);
+            color: var(--ux-ink);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Plus Jakarta Sans", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .portal-shell {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(640px 360px at 50% 0%, var(--ux-accent-soft), transparent 70%),
+                var(--ux-bg);
+        }
+
+        .portal-card {
+            width: 100%;
+            max-width: 460px;
+            background: var(--ux-surface);
+            border: 1px solid var(--ux-line);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 18px 42px -22px var(--ux-shadow);
+        }
+
+        .portal-card.is-selector {
+            max-width: 640px;
+        }
+
+        .portal-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 11px;
+            border-radius: 999px;
+            background: var(--ux-surface-2);
+            border: 1px solid var(--ux-line);
+            color: var(--ux-ink-2);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .portal-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: var(--ux-mint);
+            animation: portalPulse 1.4s ease-in-out infinite;
+        }
+
+        @keyframes portalPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.82); }
+        }
+
+        .portal-title {
+            margin: 16px 0 6px;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+        }
+
+        .portal-subtitle {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.55;
+            color: var(--ux-ink-2);
+        }
+
+        .portal-actions {
+            margin-top: 22px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .portal-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 18px;
+            border-radius: 12px;
+            background: var(--ueh-primary);
+            color: #FFFFFF;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.18s cubic-bezier(.34, 1.45, .64, 1), opacity 0.18s ease;
+        }
+
+        .portal-btn:hover {
+            transform: translateY(-1px);
+            opacity: 0.94;
+        }
+
+        .portal-btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: var(--ux-surface-2);
+            color: var(--ux-ink-2);
+            border: 1px solid var(--ux-line);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .portal-btn-ghost:hover {
+            border-color: var(--ux-line-2);
+            color: var(--ux-ink);
+        }
+
+        .school-grid {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 560px) {
+            .school-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .school-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
+            border-radius: 14px;
+            background: var(--ux-surface-2);
+            border: 1px solid var(--ux-line);
+            text-decoration: none;
+            color: var(--ux-ink);
+            transition: border-color 0.18s ease, transform 0.18s cubic-bezier(.34, 1.45, .64, 1);
+        }
+
+        a.school-item:hover {
+            border-color: var(--ueh-primary);
+            transform: translateY(-2px);
+        }
+
+        .school-item.is-placeholder {
+            opacity: 0.72;
+            border-style: dashed;
+        }
+
+        .school-badge {
+            display: inline-flex;
+            align-self: flex-start;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            background: var(--ux-mint-soft);
+            color: var(--ux-mint);
+        }
+
+        .school-badge.is-soon {
+            background: var(--ux-accent-soft);
+            color: var(--ux-accent);
+        }
+
+        .school-name {
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .school-meta {
+            font-size: 12px;
+            color: var(--ux-ink-3);
+        }
+
+        .portal-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="portal-shell">
+        <!-- Default transition screen when redirecting -->
+        <section id="redirect-view" class="portal-card" aria-live="polite">
+            <div class="portal-kicker">
+                <span class="portal-dot" aria-hidden="true"></span>
+                <span>UEHNEST · Lucian Labs</span>
+            </div>
+            <h1 class="portal-title">Đang chuyển hướng đến Dashboard UEH</h1>
+            <p class="portal-subtitle">
+                Hệ thống đang đưa bạn vào không gian học tập UEHNEST cho Đại học Kinh tế TP.HCM (UEH).
+            </p>
+            <div class="portal-actions">
+                <a id="fallback-redirect-link" class="portal-btn" href="ueh-dashboard.html">
+                    Mở UEH Dashboard ngay
+                </a>
+                <a class="portal-btn-ghost" href="?portal=select">Chọn trường</a>
+            </div>
+        </section>
+
+        <!-- Multi-school selector view when ?portal=select is passed -->
+        <section id="selector-view" class="portal-card is-selector hidden">
+            <div class="portal-header-row">
+                <div class="portal-kicker">
+                    <span class="portal-dot" aria-hidden="true"></span>
+                    <span>UEHNEST · Multi-School Portal</span>
+                </div>
+                <button id="portal-theme-btn" type="button" class="portal-btn-ghost">Đổi giao diện</button>
+            </div>
+            <h1 class="portal-title">Chọn không gian học tập theo trường</h1>
+            <p class="portal-subtitle">
+                Chọn trường Đại học đang hoạt động bên dưới để truy cập kho tài liệu, đề thi thử và Academic Workbench.
+            </p>
+            <div id="school-grid" class="school-grid"></div>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            var redirectView = document.getElementById('redirect-view');
+            var selectorView = document.getElementById('selector-view');
+            var fallbackLink = document.getElementById('fallback-redirect-link');
+            var schoolGrid = document.getElementById('school-grid');
+            var themeBtn = document.getElementById('portal-theme-btn');
+
+            if (fallbackLink && window.UEHNEST_TARGET_URL) {
+                fallbackLink.setAttribute('href', window.UEHNEST_TARGET_URL);
+            }
+
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function () {
+                    var html = document.documentElement;
+                    var isDark = html.classList.toggle('dark');
+                    html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+                    try {
+                        localStorage.setItem('uehnest_theme', isDark ? 'dark' : 'light');
+                    } catch (e) { }
+                });
+            }
+
+            if (window.UEHNEST_PORTAL_MODE === 'select' && redirectView && selectorView && schoolGrid) {
+                redirectView.classList.add('hidden');
+                selectorView.classList.remove('hidden');
+
+                var schools = window.UEHNEST_SCHOOLS || {};
+                Object.keys(schools).forEach(function (key) {
+                    var school = schools[key];
+                    if (!school) return;
+
+                    var card = document.createElement(school.active ? 'a' : 'div');
+                    card.className = 'school-item' + (school.active ? '' : ' is-placeholder');
+                    if (school.active && school.url) {
+                        card.setAttribute('href', school.url);
+                    }
+
+                    var badge = document.createElement('span');
+                    badge.className = 'school-badge' + (school.active ? '' : ' is-soon');
+                    badge.textContent = school.active ? 'Đang hoạt động' : 'Sắp ra mắt';
+
+                    var nameEl = document.createElement('div');
+                    nameEl.className = 'school-name';
+                    nameEl.textContent = school.name || key.toUpperCase();
+
+                    var metaEl = document.createElement('div');
+                    metaEl.className = 'school-meta';
+                    metaEl.textContent = school.active ? 'Truy cập Academic Workbench →' : 'Đang chuẩn bị mở rộng';
+
+                    card.appendChild(badge);
+                    card.appendChild(nameEl);
+                    card.appendChild(metaEl);
+                    schoolGrid.appendChild(card);
+                });
+
+                var futureCard = document.createElement('div');
+                futureCard.className = 'school-item is-placeholder';
+
+                var futureBadge = document.createElement('span');
+                futureBadge.className = 'school-badge is-soon';
+                futureBadge.textContent = 'Sắp mở rộng';
+
+                var futureName = document.createElement('div');
+                futureName.className = 'school-name';
+                futureName.textContent = 'Các trường Đại học khác tại TP.HCM';
+
+                var futureMeta = document.createElement('div');
+                futureMeta.className = 'school-meta';
+                futureMeta.textContent = 'Sẵn sàng tích hợp thêm trường qua UEHNEST_SCHOOLS';
+
+                futureCard.appendChild(futureBadge);
+                futureCard.appendChild(futureName);
+                futureCard.appendChild(futureMeta);
+                schoolGrid.appendChild(futureCard);
+            }
+        })();
+    </script>
+</body>
+
+</html>
